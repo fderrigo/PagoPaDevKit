@@ -1,0 +1,9 @@
+@using PagoPaDevKit.DemoEnte.ViewComponents
+@model EnvBadgeVm
+@{
+    string tip = string.Join("&#10;", Model.BaseUrls.Where(u => !string.IsNullOrEmpty(u.Value)).Select(u => $"{u.Key}: {u.Value}"));
+}
+<span class="badge ppa-env-badge @(Model.IsMock ? "text-bg-success" : "text-bg-warning")"
+      data-bs-toggle="tooltip" data-bs-html="true" title="@tip">
+    <i class="bi @(Model.IsMock ? "bi-hdd-rack" : "bi-cloud")"></i> @Model.Label
+</span>

@@ -1,0 +1,192 @@
+@model RiconciliazioneVm
+@{
+    ViewData["Title"] = "Riconciliazione contabile";
+    ViewData["Section"] = "Test Ente";
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    string euroD(decimal d) => d.ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<h1 class="h3 mb-1">Riconciliazione contabile</h1>
+<p class="text-secondary mb-3">Catena di riconciliazione pagoPA:
+    <span class="badge text-bg-primary">RT incassate</span> <i class="bi bi-arrow-right"></i>
+    <span class="badge text-bg-info">FdR rendicontati</span> <i class="bi bi-arrow-right"></i>
+    <span class="badge text-bg-secondary">riversamento banca</span>.
+    L'ente verifica che ogni incasso (ricevuta) sia rendicontato dal PSP e accreditato sul conto tesoreria.</p>
+
+<!-- ===== KPI ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-1"><span class="badge text-bg-primary rounded-circle p-2"><i class="bi bi-receipt"></i></span><span class="text-secondary small">Incassato (RT)</span></div>
+            <div class="h4 mb-0">@euro(Model.RtTotaleCent) €</div>
+            <div class="text-secondary small">@Model.RtCount ricevute</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-1"><span class="badge text-bg-info rounded-circle p-2"><i class="bi bi-folder2-open"></i></span><span class="text-secondary small">Rendicontato (FdR)</span></div>
+            <div class="h4 mb-0">@euroD(Model.FdrTotale) €</div>
+            <div class="text-secondary small">@Model.FdrCount flussi pubblicati</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-1"><span class="badge text-bg-secondary rounded-circle p-2"><i class="bi bi-bank"></i></span><span class="text-secondary small">Riversato banca <span class="badge text-bg-danger">MOCK</span></span></div>
+            <div class="h4 mb-0">@euroD(Model.RiversatoTotale) €</div>
+            <div class="text-secondary small">accredito conto tesoreria</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100 @(Model.TuttoQuadrato ? "border-success" : "border-warning")"><div class="card-body">
+            <div class="d-flex align-items-center gap-2 mb-1"><span class="badge @(Model.TuttoQuadrato ? "text-bg-success" : "text-bg-warning") rounded-circle p-2"><i class="bi @(Model.TuttoQuadrato ? "bi-check2-circle" : "bi-hourglass-split")"></i></span><span class="text-secondary small">Quadratura</span></div>
+            @if (Model.TuttoQuadrato)
+            {
+                <div class="h5 mb-0 text-success">Tutto rendicontato</div>
+                <div class="text-secondary small">incassato = rendicontato</div>
+            }
+            else
+            {
+                <div class="h5 mb-0 text-warning">@Model.RtDaRendicontare in attesa</div>
+                <div class="text-secondary small">ricevute non ancora in un FdR</div>
+            }
+        </div></div>
+    </div>
+</div>
+
+<!-- ===== FdR reali ===== -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><i class="bi bi-folder2-open me-1"></i> Flussi di Rendicontazione <span class="badge text-bg-success">dati reali · backend</span></span>
+        <form method="post" action="/riconciliazione/simula" data-loading>
+            <button class="btn btn-sm btn-primary" data-loading-text="Pubblico..."><i class="bi bi-cloud-upload"></i> Simula pubblicazione FdR dal PSP</button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Fdr.Count == 0)
+        {
+            <div class="ppa-empty">
+                <i class="bi bi-folder2-open fs-1 d-block mb-2 text-secondary"></i>
+                Nessun FdR pubblicato.
+                @if (Model.RtCount > 0)
+                { <div class="mt-1">Ci sono <strong>@Model.RtCount</strong> ricevute: premi <em>«Simula pubblicazione FdR dal PSP»</em> per rendicontarle (il gestionale fa da PSP).</div> }
+                else
+                { <div class="mt-1">Paga prima qualche avviso per avere ricevute da rendicontare.</div> }
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Identificativo flusso</th><th>PSP</th><th>Data</th><th class="text-end">Pagamenti</th><th class="text-end">Importo</th><th class="text-end">Azioni</th></tr></thead>
+                    <tbody>
+                        @foreach (var f in Model.Fdr)
+                        {
+                            <tr>
+                                <td><code class="small">@f.Fdr</code></td>
+                                <td>@f.PspId</td>
+                                <td>@f.FlowDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end">@f.NumPagamenti</td>
+                                <td class="text-end fw-semibold">@euroD(f.Importo) €</td>
+                                <td class="text-end text-nowrap">
+                                    <a class="btn btn-sm btn-outline-secondary" href="/riconciliazione/fdr/@f.PspId/@f.Fdr/@f.Revision"><i class="bi bi-eye"></i> Dettaglio</a>
+                                    <a class="btn btn-sm btn-outline-dark" href="/riconciliazione/fdr/@f.PspId/@f.Fdr/@f.Revision/xml" target="_blank"><i class="bi bi-filetype-xml"></i> XML</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ===== Quadratura per giornata ===== -->
+<h2 class="h5 mb-2"><i class="bi bi-clipboard-check me-1"></i> Quadratura per giornata</h2>
+<div class="alert alert-danger d-flex align-items-start gap-2 py-2">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div class="small"><strong>DATI MOCKATI</strong> nella colonna «Riversato banca»: l'accredito sul conto tesoreria <u>non è emulabile</u> ed è posto uguale al rendicontato. Le colonne «Incassato» e «Rendicontato» sono invece dati reali (RT e FdR).</div>
+</div>
+
+@if (Model.Giorni.Count == 0)
+{
+    <div class="ppa-empty"><i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>Nessun incasso da riconciliare.</div>
+}
+else
+{
+    @foreach (var (g, gi) in Model.Giorni.Select((x, i) => (x, i)))
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><i class="bi bi-calendar3 me-1"></i> <strong>@g.Data.ToString("dd/MM/yyyy")</strong></span>
+                @if (g.Quadrato)
+                {
+                    <span class="badge text-bg-success"><i class="bi bi-check2-circle"></i> QUADRATO</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-warning"><i class="bi bi-hourglass-split"></i> PARZIALE · @(g.RtCount - g.FdrCount) da rendicontare</span>
+                }
+            </div>
+            <div class="card-body">
+                <!-- catena a 3 vie -->
+                <div class="row g-2 align-items-stretch text-center mb-3">
+                    <div class="col">
+                        <div class="border rounded p-2 h-100">
+                            <div class="text-secondary small"><i class="bi bi-receipt"></i> Incassato (RT)</div>
+                            <div class="fs-5 fw-bold">@euro(g.RtImportoCent) €</div>
+                            <div class="text-secondary small">@g.RtCount ricevute</div>
+                        </div>
+                    </div>
+                    <div class="col-auto d-flex align-items-center"><i class="bi @(g.FdrImporto == g.RtImportoCent / 100m ? "bi-arrow-right text-success" : "bi-arrow-right text-warning")"></i></div>
+                    <div class="col">
+                        <div class="border rounded p-2 h-100">
+                            <div class="text-secondary small"><i class="bi bi-folder2-open"></i> Rendicontato (FdR)</div>
+                            <div class="fs-5 fw-bold">@euroD(g.FdrImporto) €</div>
+                            <div class="text-secondary small">@g.FdrCount pagamenti</div>
+                        </div>
+                    </div>
+                    <div class="col-auto d-flex align-items-center"><i class="bi bi-arrow-right text-secondary"></i></div>
+                    <div class="col">
+                        <div class="border rounded p-2 h-100 bg-body-tertiary">
+                            <div class="text-secondary small"><i class="bi bi-bank"></i> Riversato banca <span class="badge text-bg-danger">MOCK</span></div>
+                            <div class="fs-5 fw-bold">@euroD(g.Riversato) €</div>
+                            <div class="text-secondary small">conto tesoreria</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- dettaglio pagamenti -->
+                <a class="small" data-bs-toggle="collapse" href="#q-@gi"><i class="bi bi-chevron-down"></i> Dettaglio pagamenti (@g.RtCount)</a>
+                <div class="collapse mt-2" id="q-@gi">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th>IUV</th><th>Debitore</th><th class="text-end">Importo</th><th>Incassato</th><th>Rendicontato</th><th>Flusso</th></tr></thead>
+                            <tbody>
+                                @foreach (var p in g.Pagamenti)
+                                {
+                                    <tr>
+                                        <td><code class="small">@p.Iuv</code></td>
+                                        <td>@p.Debitore</td>
+                                        <td class="text-end">@euro(p.ImportoCent) €</td>
+                                        <td><span class="badge text-bg-success"><i class="bi bi-check2"></i> RT</span></td>
+                                        <td>
+                                            @if (p.Rendicontato)
+                                            {
+                                                <span class="badge text-bg-info"><i class="bi bi-check2"></i> in FdR</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-warning"><i class="bi bi-hourglass"></i> in attesa</span>
+                                            }
+                                        </td>
+                                        <td>@if (p.Fdr is not null) { <code class="small">@p.Fdr</code> } else { <span class="text-secondary">—</span> }</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

@@ -1,0 +1,44 @@
+@model CarteVm
+@{
+    ViewData["Title"] = "Carte di test";
+    ViewData["Section"] = "Test Cittadino";
+    string nav = Model.UltimoNav ?? "";
+}
+
+<h1 class="h3 mb-1">Carte di test</h1>
+<p class="text-secondary">Carte fittizie con comportamento deterministico. Nessun dato reale, nessun circuito: il numero determina l'esito.</p>
+
+<div class="row g-3">
+    @foreach (var c in Model.Carte)
+    {
+        var (cls, icon) = c.Outcome switch
+        {
+            CardOutcome.Ok => ("border-success", "bi-check-circle text-success"),
+            CardOutcome.Expired => ("border-warning", "bi-calendar-x text-warning"),
+            _ => ("border-danger", "bi-x-circle text-danger"),
+        };
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100 @cls">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi @icon fs-4"></i>
+                        <span class="fw-semibold">@c.Label</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <code class="fs-6">@c.Pan</code>
+                        <button class="btn btn-sm btn-link p-0 ppa-copy" data-copy="@c.Pan"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                    <p class="text-secondary small mb-3">@c.Behavior</p>
+                    @if (!string.IsNullOrEmpty(nav))
+                    {
+                        <a class="btn btn-sm btn-outline-primary" href="/cittadino/paga?nav=@nav"><i class="bi bi-play"></i> Prova questa carta</a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+@if (string.IsNullOrEmpty(nav))
+{
+    <p class="text-secondary mt-3"><i class="bi bi-info-circle"></i> Crea o seed una posizione per abilitare "prova questa carta".</p>
+}

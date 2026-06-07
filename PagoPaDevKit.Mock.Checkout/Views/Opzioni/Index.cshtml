@@ -1,0 +1,43 @@
+@model OpzioniVm
+@using System.Globalization
+@{
+    ViewData["Title"] = "Opzioni di pagamento";
+    string euro(long c) => (c / 100m).ToString("0.00", CultureInfo.InvariantCulture) + " €";
+}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h1 class="h4">Scegli come pagare</h1>
+        <p class="text-secondary small">Posizione @Model.Iupd — stato <span class="badge text-bg-secondary">@Model.Status</span></p>
+        @foreach (var o in Model.Opzioni)
+        {
+            <div class="border rounded p-3 mb-2">
+                <div class="fw-semibold mb-2">@o.Description —
+                    @(o.OptionType == "INSTALLMENTS" ? "piano rateale" : "unica soluzione")
+                    <span class="text-secondary">(totale @euro(o.TotalAmount))</span>
+                </div>
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        @foreach (var r in o.Rate)
+                        {
+                            <tr>
+                                <td>@r.Description</td>
+                                <td class="text-secondary small">scad. @r.DueDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">@euro(r.Amount)</td>
+                                <td class="text-end">
+                                    @if (r.Status == "PAID" || r.Status == "REPORTED")
+                                    {
+                                        <span class="badge text-bg-success">PAGATA</span>
+                                    }
+                                    else
+                                    {
+                                        <a class="btn btn-sm btn-primary" href="/pagamento?nav=@r.Nav&fiscalCode=@Model.FiscalCode">Paga questa</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

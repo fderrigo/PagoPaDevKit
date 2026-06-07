@@ -1,0 +1,36 @@
+@model EsitoVm
+@using System.Globalization
+@{
+    ViewData["Title"] = Model.Heading;
+    string euro(decimal v) => v.ToString("0.00", CultureInfo.InvariantCulture) + " €";
+}
+<div class="card shadow-sm">
+    <div class="card-body text-center p-4">
+        @if (Model.Ok)
+        {
+            <i class="bi bi-check-circle-fill text-success" style="font-size:3rem"></i>
+            <h1 class="h4 mt-2 text-success">@Model.Heading</h1>
+            <p class="text-secondary mb-1">Avvisi pagati a <strong>@Model.CompanyName</strong>:</p>
+            <div class="mb-2">
+                @foreach (var n in Model.Navs)
+                {
+                    <span class="badge text-bg-light border me-1"><code>@n</code></span>
+                }
+            </div>
+            <div class="ppa-amount">@euro(Model.Amount ?? 0)</div>
+            <p class="text-secondary small">+ commissione PSP @euro(Model.Fee ?? 0)</p>
+            <p class="text-secondary small mb-0">Ricevuta (RT) su GPD: <code>GET /payments/@Model.FiscalCode/receipts/{IUV}</code></p>
+        }
+        else
+        {
+            <i class="bi bi-x-circle-fill text-danger" style="font-size:3rem"></i>
+            <h1 class="h4 mt-2 text-danger">@Model.Heading</h1>
+            <p>@Model.Message</p>
+            @if (Model.ShowRetry && Model.Navs.Any())
+            {
+                <p class="text-secondary small">Gli avvisi restano da pagare. Puoi riprovare.</p>
+                <a class="btn btn-outline-primary" href="/pagamento?@string.Join("&", Model.Navs.Select(n => $"nav={n}"))&fiscalCode=@Model.FiscalCode">Torna al pagamento</a>
+            }
+        }
+    </div>
+</div>

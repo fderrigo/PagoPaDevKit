@@ -1,0 +1,72 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Cfg
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] ?? "Checkout") · pagoPA (mock)</title>
+    <link rel="stylesheet" href="~/lib/bootstrap-italia/css/bootstrap-italia.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body class="bg-body-tertiary d-flex flex-column min-vh-100">
+    <header class="it-header-wrapper">
+        <div class="it-header-slim-wrapper">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="it-header-slim-wrapper-content">
+                            <a class="navbar-brand" href="/">pagoPA · checkout (mock)</a>
+                            <div class="it-header-slim-right-zone">
+                                <span class="badge text-bg-warning"><i class="bi bi-cone-striped"></i> ambiente di sviluppo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="it-nav-wrapper">
+            <div class="it-header-center-wrapper it-small-header">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="it-header-center-content-wrapper">
+                                <div class="it-brand-wrapper">
+                                    <a href="/">
+                                        <svg class="icon"><use href="/lib/bootstrap-italia/svg/sprites.svg#it-card"></use></svg>
+                                        <div class="it-brand-text">
+                                            <div class="it-brand-title">Checkout pagoPA</div>
+                                            <div class="it-brand-tagline d-none d-md-block">Gateway di pagamento (mock)</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container ppa-pay-shell py-4 flex-grow-1">
+        @RenderBody()
+    </main>
+
+    <footer class="it-footer mt-auto">
+        <div class="it-footer-small-prints clearfix">
+            <div class="container">
+                <ul class="it-footer-small-prints-list list-inline mb-0 d-flex flex-column flex-md-row">
+                    <li class="list-inline-item">Progetto open source indipendente, non affiliato a PagoPA S.p.A. Emulatore a scopo di sviluppo e formazione, fornito senza alcuna garanzia.</li>
+                    <li class="list-inline-item">
+                        <a href="@(Cfg["Checkout:GestionaleUrl"] ?? "http://localhost:5003")" target="_blank" rel="noopener">Torna al gestionale ente</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap-italia/js/bootstrap-italia.bundle.min.js"></script>
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

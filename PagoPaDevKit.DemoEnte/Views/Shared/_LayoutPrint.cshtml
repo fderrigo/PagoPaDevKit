@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] ?? "Stampa") · PagoPaDevKit</title>
+    <link rel="stylesheet" href="~/lib/bootstrap-italia/css/bootstrap-italia.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-white">
+    <div class="container py-4" style="max-width:820px">
+        @RenderBody()
+    </div>
+    <script src="~/lib/bootstrap-italia/js/bootstrap-italia.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

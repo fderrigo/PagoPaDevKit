@@ -1,0 +1,115 @@
+@model PagaCittadinoVm
+@{
+    ViewData["Title"] = "Paga un avviso";
+    ViewData["Section"] = "Test Cittadino";
+    string euroD(decimal x) => x.ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    int step = Model.Step;
+    string cls(int n) => n < step || (n == step && step == 4 && Model.Ok == true) ? "done" : n == step ? "active" : "";
+}
+
+<h1 class="h3 mb-3">Paga un avviso</h1>
+
+<ol class="ppa-stepper mb-4">
+    <li class="step @cls(1)"><span class="num">1</span><span>Dati avviso</span></li>
+    <li class="step @cls(2)"><span class="num">2</span><span>Riepilogo</span></li>
+    <li class="step @cls(3)"><span class="num">3</span><span>Carta</span></li>
+    <li class="step @cls(4)"><span class="num">4</span><span>Esito</span></li>
+</ol>
+
+<div class="card shadow-sm mx-auto" style="max-width:640px">
+    <div class="card-body p-4">
+        @if (step == 1)
+        {
+            @if (Model.Ok == false && !string.IsNullOrEmpty(Model.Message))
+            {
+                <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @Model.Message</div>
+            }
+            <form method="post" action="/cittadino/paga" data-loading>
+                <input type="hidden" name="fase" value="verifica" />
+                <div class="mb-3">
+                    <label class="form-label">Codice avviso (NAV) — 18 cifre</label>
+                    <div class="input-group">
+                        <input name="nav" class="form-control" required value="@Model.Nav" placeholder="3000000000000000XX" />
+                        @if (!string.IsNullOrEmpty(Model.UltimoNav))
+                        {
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementsByName('nav')[0].value='@Model.UltimoNav'">
+                                <i class="bi bi-clock-history"></i> Usa ultima posizione
+                            </button>
+                        }
+                    </div>
+                    <div class="form-text">Lo trovi sull'avviso o nel dettaglio posizione. Equivale a scansionare il QR.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Codice fiscale ente creditore</label>
+                    <input name="fiscalCode" class="form-control" required value="@Model.FiscalCode" />
+                </div>
+                <button class="btn btn-primary" data-loading-text="Verifico..."><i class="bi bi-search"></i> Verifica avviso</button>
+            </form>
+        }
+        else if (step == 2)
+        {
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-secondary small">@Model.CompanyName</div>
+                    <div class="fw-semibold">@Model.Description</div>
+                </div>
+                <div class="text-end">
+                    <div class="fs-4 fw-bold" style="color:var(--ppa-blue)">@euroD(Model.AmountEuro) €</div>
+                    <div class="text-secondary small">+ commissione @euroD(Model.FeeEuro) €</div>
+                </div>
+            </div>
+
+            @if (Model.Ok == false && !string.IsNullOrEmpty(Model.Message))
+            {
+                <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> @Model.Message</div>
+            }
+
+            <form method="post" action="/cittadino/paga" data-loading>
+                <input type="hidden" name="fase" value="paga" />
+                <input type="hidden" name="nav" value="@Model.Nav" />
+                <input type="hidden" name="fiscalCode" value="@Model.FiscalCode" />
+                <label class="form-label">Carta (usa una carta di test)</label>
+                <div class="row g-2 mb-3">
+                    @foreach (var c in Model.Carte)
+                    {
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-secondary w-100 text-start" onclick="document.getElementsByName('pan')[0].value='@c.Pan'">
+                                <i class="bi bi-credit-card-2-front"></i> <code>@c.Pan</code> — @c.Label
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Numero carta</label>
+                    <input name="pan" class="form-control" inputmode="numeric" required value="4242424242424242" />
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/cittadino/paga" class="btn btn-outline-secondary">Annulla</a>
+                    <button class="btn btn-primary" data-loading-text="Pago...">
+                        <i class="bi bi-lock"></i> Paga @euroD(Model.AmountEuro + Model.FeeEuro) €
+                    </button>
+                </div>
+            </form>
+        }
+        else if (step == 4)
+        {
+            <div class="text-center">
+                @if (Model.Ok == true)
+                {
+                    <i class="bi bi-check-circle-fill text-success" style="font-size:3rem"></i>
+                    <h2 class="h4 mt-2">Pagamento riuscito</h2>
+                }
+                else
+                {
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size:3rem"></i>
+                    <h2 class="h4 mt-2">Pagamento non riuscito</h2>
+                }
+                <p class="text-secondary">@Model.Message</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="/cittadino/paga" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Nuovo pagamento</a>
+                    <a href="/ente/posizioni" class="btn btn-primary"><i class="bi bi-list-task"></i> Vedi posizioni</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

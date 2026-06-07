@@ -1,0 +1,40 @@
+@model ScenariVm
+@{
+    ViewData["Title"] = "Scenari di test";
+    ViewData["Section"] = "Infrastruttura";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h1 class="h3 mb-0">Scenari di test end-to-end</h1>
+    <button class="btn btn-primary" onclick="runAllScenarios()"><i class="bi bi-play-circle"></i> Esegui tutti</button>
+</div>
+<p class="text-secondary">Ogni scenario chiama le <strong>API HTTP reali</strong> dei mock (GPD, Nodo, ApiConfig). Nessun risultato è simulato: passa solo se il backend risponde come pagoPA.</p>
+
+<div class="row g-3">
+    @foreach (var s in Model.Scenari)
+    {
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" data-scenario="@s.Key">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi @s.Icon fs-4 text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h2 class="h6 mb-0">@s.Title</h2>
+                                <span data-scenario-status></span>
+                            </div>
+                            <p class="text-secondary small mb-1">@s.Description</p>
+                            <div class="small"><span class="text-secondary">Atteso:</span> @s.Expected
+                                <span class="text-secondary ms-2" data-scenario-duration></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2" data-scenario-steps></div>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="runScenario('@s.Key', this)"><i class="bi bi-play"></i> Esegui</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

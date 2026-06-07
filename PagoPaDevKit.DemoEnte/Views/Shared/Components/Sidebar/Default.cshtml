@@ -1,0 +1,41 @@
+@using PagoPaDevKit.DemoEnte.ViewComponents
+@model List<NavGroup>
+@{
+    string current = (string?)ViewData["CurrentPath"] ?? "/";
+    // Un href "matcha" se è la pagina esatta o un suo prefisso di percorso (boundary su "/").
+    bool Matches(string href) => href == "/" ? current == "/" : (current == href || current.StartsWith(href + "/"));
+    // Attivo SOLO l'item col prefisso più lungo (più specifico): evita che il padre
+    // (es. /infrastruttura) resti attivo sulle sotto-pagine (/infrastruttura/scenari).
+    string best = Model.SelectMany(g => g.Items)
+        .Select(i => i.Href.ToLowerInvariant())
+        .Where(Matches)
+        .OrderByDescending(h => h.Length)
+        .FirstOrDefault() ?? "";
+    bool IsActive(string href) => href.ToLowerInvariant() == best;
+}
+<div class="d-flex flex-column h-100 p-3">
+    <a href="/" class="ppa-brand text-decoration-none mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-bank2 fs-4"></i>
+        <span>PagoPaDevKit<br /><small>console emulatore</small></span>
+    </a>
+    <ul class="nav nav-pills flex-column ppa-nav mb-auto">
+        @foreach (var g in Model)
+        {
+            @if (g.Label is not null)
+            {
+                <li class="ppa-group-label">@g.Label</li>
+            }
+            @foreach (var it in g.Items)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive(it.Href) ? "active" : "")" href="@it.Href">
+                        <i class="bi @it.Icon"></i> <span>@it.Label</span>
+                    </a>
+                </li>
+            }
+        }
+    </ul>
+    <div class="small text-white-50 mt-3 ppa-noprint">
+        <i class="bi bi-info-circle"></i> Progetto open source indipendente, non affiliato a PagoPA S.p.A. Emulatore a scopo di sviluppo e formazione, fornito senza alcuna garanzia.
+    </div>
+</div>

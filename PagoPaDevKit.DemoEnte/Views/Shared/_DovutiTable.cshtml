@@ -1,0 +1,77 @@
+@using System.Globalization
+@model DovutiTableVm
+@{
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    string navFmt(string nav) => nav.Length == 18
+        ? $"{nav[..4]} {nav.Substring(4, 4)} {nav.Substring(8, 4)} {nav.Substring(12, 4)} {nav[16..]}" : nav;
+}
+@if (Model.Dovuti.Count == 0)
+{
+    <div class="ppa-empty">
+        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+        Nessuna posizione presente. <a href="/ente/crea">Crea la prima posizione</a>.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Causale</th>
+                    <th>Debitore</th>
+                    <th class="text-end">Importo</th>
+                    @if (!Model.Compact)
+                    {
+                        <th>Codice avviso (NAV)</th>
+                        <th>Scadenza</th>
+                    }
+                    <th>Stato</th>
+                    <th class="text-end">Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Dovuti)
+                {
+                    <tr>
+                        <td>@d.Description</td>
+                        <td><span class="d-block">@d.DebtorName</span><small class="text-secondary">@d.DebtorFiscalCode</small></td>
+                        <td class="text-end fw-semibold">@euro(d.Amount) €</td>
+                        @if (!Model.Compact)
+                        {
+                            <td>
+                                @if (d.IsMulti)
+                                {
+                                    <span class="badge text-bg-secondary">@d.Tipo</span>
+                                    <span class="text-secondary small d-block">@d.InstallmentCount rat@(d.InstallmentCount == 1 ? "a" : "e") · vedi dettaglio</span>
+                                }
+                                else
+                                {
+                                    <code class="small">@navFmt(d.Nav)</code>
+                                    <button class="btn btn-sm btn-link p-0 ms-1 ppa-copy" data-copy="@d.Nav" title="Copia NAV"><i class="bi bi-clipboard"></i></button>
+                                }
+                            </td>
+                            <td>@d.DueDate.ToString("dd/MM/yyyy")</td>
+                        }
+                        <td><partial name="_StatoBadge" model="@d.Status" /></td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" href="/ente/posizioni/@d.Iupd" title="Dettaglio"><i class="bi bi-eye"></i></a>
+                            @if (!d.IsMulti)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="/ente/dovuti/@d.Iuv/avviso" title="Stampa avviso" target="_blank"><i class="bi bi-printer"></i></a>
+                                @if (d.Status == "PAGATO")
+                                {
+                                    <a class="btn btn-sm btn-outline-success" href="/ente/dovuti/@d.Iuv/ricevuta" title="Ricevuta"><i class="bi bi-receipt"></i></a>
+                                }
+                                else
+                                {
+                                    <a class="btn btn-sm btn-primary" href="/cittadino/paga?nav=@d.Nav" title="Paga come cittadino"><i class="bi bi-credit-card"></i></a>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

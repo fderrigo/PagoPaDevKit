@@ -1,0 +1,87 @@
+@model FdrDettaglioVm
+@{
+    ViewData["Title"] = "Dettaglio FdR";
+    ViewData["Section"] = "Test Ente";
+    var d = Model.Detail;
+    string euroD(decimal x) => x.ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <a href="/riconciliazione" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> Riconciliazione</a>
+        <h1 class="h3 mb-0">Flusso di Rendicontazione</h1>
+        <code class="small">@d.Fdr</code>
+    </div>
+    <a class="btn btn-outline-dark" target="_blank" href="/riconciliazione/fdr/@Model.PspId/@d.Fdr/@Model.Revision/xml"><i class="bi bi-filetype-xml"></i> Scarica FlussoRiversamento firmato</a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-info-circle me-1"></i> Intestazione flusso</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-secondary">Stato</dt><dd class="col-sm-8"><span class="badge text-bg-success">@d.Status</span> · rev @d.Revision</dd>
+                    <dt class="col-sm-4 text-secondary">PSP</dt><dd class="col-sm-8">@(d.PspName ?? d.PspId) <span class="text-secondary">(@d.PspId)</span></dd>
+                    <dt class="col-sm-4 text-secondary">Ente</dt><dd class="col-sm-8">@(d.OrganizationName ?? Model.Ofc) <span class="text-secondary">(@Model.Ofc)</span></dd>
+                    <dt class="col-sm-4 text-secondary">Data flusso</dt><dd class="col-sm-8">@d.FdrDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                    <dt class="col-sm-4 text-secondary">Regolamento</dt><dd class="col-sm-8">@(d.Regulation ?? "—")@(d.RegulationDate.HasValue ? $" · {d.RegulationDate:dd/MM/yyyy}" : "")</dd>
+                    <dt class="col-sm-4 text-secondary">BIC banca</dt><dd class="col-sm-8">@(d.Bic ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-cash-stack me-1"></i> Totali</div>
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="d-flex justify-content-between mb-2"><span class="text-secondary">Numero pagamenti</span><strong>@d.TotPayments</strong></div>
+                <div class="d-flex justify-content-between align-items-center"><span class="text-secondary">Importo totale</span><span class="fs-3 fw-bold" style="color:var(--bs-primary)">@euroD(d.SumPayments) €</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-body"><i class="bi bi-list-ol me-1"></i> Pagamenti rendicontati (@Model.Payments.Count)</div>
+    <div class="card-body p-0">
+        @if (Model.Payments.Count == 0)
+        {
+            <div class="ppa-empty">Nessun pagamento nel flusso.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead><tr><th>#</th><th>IUV</th><th>IUR</th><th class="text-end">Importo</th><th>Esito</th><th>Data</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr>
+                                <td>@p.Index</td>
+                                <td><code class="small">@p.Iuv</code></td>
+                                <td><code class="small">@p.Iur</code></td>
+                                <td class="text-end fw-semibold">@euroD(p.Pay) €</td>
+                                <td>
+                                    @if (p.PayStatus == "EXECUTED")
+                                    {
+                                        <span class="badge text-bg-success">eseguito</span>
+                                    }
+                                    else if (p.PayStatus == "REVOKED")
+                                    {
+                                        <span class="badge text-bg-danger">revocato</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">@p.PayStatus</span>
+                                    }
+                                </td>
+                                <td>@p.PayDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

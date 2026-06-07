@@ -1,0 +1,56 @@
+@model OpzioniCittadinoVm
+@{
+    ViewData["Title"] = "Opzioni di pagamento";
+    ViewData["Section"] = "Test Cittadino";
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<h1 class="h3 mb-1">Opzioni di pagamento</h1>
+<p class="text-secondary">Interroga <code>GET /payment-options</code> su GPD: mostra rata unica e piani rateali con lo stato di ciascuna rata.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-sm-6">
+        <input name="nav" class="form-control" placeholder="Codice avviso (NAV)" value="@Model.Nav" required />
+    </div>
+    <div class="col-sm-auto">
+        <button class="btn btn-primary"><i class="bi bi-search"></i> Mostra opzioni</button>
+    </div>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+else if (Model.Rate.Count > 0)
+{
+    <div class="mb-2">Stato posizione: <span class="badge text-bg-secondary">@Model.Status</span></div>
+    <div class="card shadow-sm mb-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Rata</th><th>Scadenza</th><th class="text-end">Importo</th><th>Stato</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Rate)
+                    {
+                        bool pagata = r.Status is "PAID" or "REPORTED" or "PARTIALLY_REPORTED";
+                        <tr>
+                            <td>@r.Description<br /><code class="small">@r.Nav</code></td>
+                            <td>@(r.DueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td class="text-end fw-semibold">@euro(r.Amount) €</td>
+                            <td>@(pagata ? Html.Raw("<span class='badge text-bg-success'>PAGATA</span>") : Html.Raw("<span class='badge text-bg-warning'>da pagare</span>"))</td>
+                            <td class="text-end">
+                                @if (!pagata)
+                                {
+                                    <a class="btn btn-sm btn-primary" href="/cittadino/paga?nav=@r.Nav"><i class="bi bi-credit-card"></i> Paga</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.RawJson))
+    {
+        <partial name="_JsonAccordion" model="@(new JsonAccordionVm("opt", "Risposta JSON payment-options", Model.RawJson))" />
+    }
+}

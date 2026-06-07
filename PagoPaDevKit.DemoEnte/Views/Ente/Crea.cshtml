@@ -1,0 +1,390 @@
+@model CreaDovutoVm
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Crea posizione debitoria";
+    ViewData["Section"] = "Test Ente";
+    var ibansByEnteJson = JsonSerializer.Serialize(Model.IbansByEnte.ToDictionary(
+        kv => kv.Key, kv => kv.Value.Select(i => new { iban = i.Iban, desc = i.Description }).ToList()));
+    var entiJson = JsonSerializer.Serialize(Model.Enti.Select(e => new { cf = e.Cf, nome = e.Nome, platform = e.IsPlatform }));
+    var defaultIban = Model.Ibans.FirstOrDefault()?.Iban ?? "";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+    <div>
+        <h1 class="h3 mb-1">Crea posizione debitoria</h1>
+        <p class="text-secondary mb-0">Parti da un modello, poi personalizza. I campi <span class="ppa-req">obbligatori</span> per pagoPA sono indicati ma <strong>non bloccati</strong>: puoi creare apposta richieste errate per testare gli errori del backend.</p>
+    </div>
+</div>
+
+@if (Model.Ibans.Count == 0)
+{
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Nessun IBAN attivo: aggiungine uno in <a href="/infrastruttura/strumenti">Strumenti</a>.</div>
+}
+
+<!-- Galleria modelli -->
+<div class="row g-2 mb-4" id="templateGallery">
+    @{
+        (string Key, string Icon, string Title, string Sub)[] tpl =
+        {
+            ("unica", "bi-receipt", "Rata unica", "Un pagamento, una scadenza"),
+            ("rateale", "bi-list-ol", "Piano rateale", "Più rate con scadenze"),
+            ("split", "bi-diagram-3", "Split su più enti", "Importo diviso tra enti"),
+            ("bollo", "bi-postage", "Marca da bollo", "Imposta di bollo digitale"),
+            ("alternative", "bi-shuffle", "Opzioni alternative", "Es. unica o rateale"),
+        };
+    }
+    @foreach (var t in tpl)
+    {
+        <div class="col-6 col-md">
+            <button type="button" class="ppa-tpl card shadow-sm w-100 h-100 border" data-tpl="@t.Key" onclick="preset('@t.Key', this)">
+                <div class="card-body text-center p-3">
+                    <i class="bi @t.Icon fs-3 d-block mb-1 text-primary"></i>
+                    <div class="fw-semibold small">@t.Title</div>
+                    <div class="text-secondary" style="font-size:.72rem">@t.Sub</div>
+                </div>
+            </button>
+        </div>
+    }
+</div>
+
+<div id="esitoBox"></div>
+
+<div class="row g-4 ppa-compact">
+    <!-- Colonna form -->
+    <div class="col-lg-8">
+
+        <!-- Debitore -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-body d-flex align-items-center gap-2">
+                <i class="bi bi-person-vcard text-primary"></i> <span class="fw-semibold">Debitore</span>
+                <span class="text-secondary small ms-auto">chi deve pagare</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-3">
+                        <label class="form-label">Tipo <span class="ppa-req">•</span></label>
+                        <div class="select-wrapper">
+                            <select onchange="DEB.type=this.value">
+                                <option value="F">Persona fisica</option>
+                                <option value="G">Persona giuridica</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label">Codice fiscale / P.IVA <span class="ppa-req">•</span></label>
+                        <input class="form-control" value="RSSMRA80A01H501U" onchange="DEB.cf=this.value">
+                    </div>
+                    <div class="col-sm-5">
+                        <label class="form-label">Nominativo <span class="ppa-req">•</span></label>
+                        <input class="form-control" value="Mario Rossi" onchange="DEB.name=this.value">
+                    </div>
+                </div>
+                <div class="accordion accordion-flush mt-2" id="accDeb">
+                    <div class="accordion-item border-0">
+                        <button class="btn btn-link btn-sm text-decoration-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#debMore">
+                            <i class="bi bi-chevron-down"></i> Anagrafica completa (facoltativa)
+                        </button>
+                        <div id="debMore" class="collapse">
+                            <div class="row g-2 pt-2">
+                                <div class="col-sm-6"><label class="form-label small mb-0">Indirizzo</label><input class="form-control form-control-sm" onchange="DEB.street=this.value"></div>
+                                <div class="col-sm-2"><label class="form-label small mb-0">Civico</label><input class="form-control form-control-sm" onchange="DEB.civic=this.value"></div>
+                                <div class="col-sm-2"><label class="form-label small mb-0">CAP</label><input class="form-control form-control-sm" onchange="DEB.postal=this.value"></div>
+                                <div class="col-sm-2"><label class="form-label small mb-0">Prov.</label><input class="form-control form-control-sm" onchange="DEB.prov=this.value"></div>
+                                <div class="col-sm-4"><label class="form-label small mb-0">Città</label><input class="form-control form-control-sm" onchange="DEB.city=this.value"></div>
+                                <div class="col-sm-2"><label class="form-label small mb-0">Regione</label><input class="form-control form-control-sm" onchange="DEB.region=this.value"></div>
+                                <div class="col-sm-2"><label class="form-label small mb-0">Nazione</label><input class="form-control form-control-sm" value="IT" onchange="DEB.country=this.value"></div>
+                                <div class="col-sm-4"><label class="form-label small mb-0">Email</label><input class="form-control form-control-sm" onchange="DEB.email=this.value"></div>
+                                <div class="col-sm-4"><label class="form-label small mb-0">Telefono</label><input class="form-control form-control-sm" onchange="DEB.phone=this.value"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opzioni di pagamento -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-cash-coin text-primary"></i> <span class="fw-semibold">Cosa e come pagare</span>
+            <span class="text-secondary small ms-auto">importi, scadenze, ripartizione</span>
+        </div>
+        <div id="optionsContainer"></div>
+        <button class="btn btn-outline-secondary btn-sm mb-4" onclick="addOption()"><i class="bi bi-plus-lg"></i> Aggiungi opzione alternativa</button>
+
+        <!-- Avanzate posizione -->
+        <div class="accordion mb-4" id="accPos">
+            <div class="accordion-item">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#posAdv"><i class="bi bi-sliders me-2"></i> Impostazioni avanzate della posizione</button></h2>
+                <div id="posAdv" class="accordion-collapse collapse" data-bs-parent="#accPos">
+                    <div class="accordion-body row g-3">
+                        <div class="col-sm-6"><label class="form-label">Nome ufficio (officeName)</label><input class="form-control" value="Ufficio Tributi" onchange="HDR.officeName=this.value"></div>
+                        <div class="col-sm-6 d-flex align-items-end">
+                            <div class="toggles">
+                                <label for="psi"><code>payStandIn</code> — pagabile con stazione in stand-in
+                                    <input type="checkbox" id="psi" checked onchange="HDR.payStandIn=this.checked">
+                                    <span class="lever"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonna riepilogo (sticky) -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm ppa-sticky">
+            <div class="card-header bg-body fw-semibold"><i class="bi bi-clipboard-check text-primary me-1"></i> Riepilogo</div>
+            <div class="card-body" id="riepilogo"></div>
+            <div class="card-footer bg-body">
+                <button class="btn btn-primary w-100" id="btnCrea" onclick="submitPosizione(this)"><i class="bi bi-send"></i> Crea e pubblica</button>
+                <div class="text-secondary mt-2" style="font-size:.75rem"><span class="ppa-req">•</span> = obbligatorio pagoPA (non bloccato). Causale, IUV e NAV sono generati dall'ente.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ppa-req { color: var(--bs-danger); font-weight: 600; }
+    .ppa-tpl { cursor: pointer; transition: .12s; background: var(--bs-body-bg); }
+    .ppa-tpl:hover { border-color: var(--ppa-blue) !important; transform: translateY(-2px); }
+    .ppa-tpl.active { border-color: var(--ppa-blue) !important; box-shadow: 0 0 0 2px rgba(0,102,204,.2); }
+    .ppa-sticky { position: sticky; top: 5rem; }
+    .catbox { position: absolute; z-index: 1080; max-height: 240px; overflow-y: auto; min-width: 340px; }
+    .ppa-transfer { background: var(--bs-body-bg); }
+</style>
+
+@section Scripts {
+<script>
+    const IBANS_BY_ENTE = @Html.Raw(ibansByEnteJson);
+    const ENTI = @Html.Raw(entiJson);
+    const DEFAULT_IBAN = @Html.Raw(JsonSerializer.Serialize(defaultIban));
+    function ibansOf(cf){ return IBANS_BY_ENTE[cf] || []; }
+    const ENTE_CF = @Html.Raw(JsonSerializer.Serialize(Model.Ofc));
+    const ENTE_COMPANY = @Html.Raw(JsonSerializer.Serialize(Model.CompanyName));
+    const HDR = { payStandIn:true, officeName:'Ufficio Tributi' };
+    const DEB = { type:'F', cf:'RSSMRA80A01H501U', name:'Mario Rossi', street:'',civic:'',postal:'',city:'',prov:'',region:'',country:'IT',email:'',phone:'' };
+    let state = [];
+
+    function today(p){ const d=new Date(); d.setDate(d.getDate()+(p||0)); return d.toISOString().slice(0,10); }
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function eur(c){ return (c/100).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function cents(v){ const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?0:Math.round(n*100); }
+    function intc(v){ const n=parseInt(String(v),10); return isNaN(n)?0:n; }
+
+    function newTransfer(mode,amount){ return { mode:mode||'iban', amount:amount||'', iban:DEFAULT_IBAN, postalIban:'', category:'9/0101108TS/',
+        ente:ENTE_CF, company:ENTE_COMPANY, remittance:'', stampType:'01', province:'RM', hashDocument:'aGFzaERvY3VtZW50bw==', metadata:'' }; }
+    function newRata(amount,days,desc){ return { amount:amount||'100.00', dueDate:today(days||30), description:desc||'', fee:'0', notificationFee:'0', metadata:'', transfers:[newTransfer('iban',amount||'100.00')] }; }
+    function newOption(desc){ return { description:desc||'Pagamento', switchToExpired:false, validityDate:'', retentionDate:'', installments:[newRata()] }; }
+
+    // ---------- preset ----------
+    function preset(kind, el){
+        if (kind==='unica') state=[newOption('TARI 2026 - rata unica')];
+        else if (kind==='rateale'){ const o=newOption('TARI 2026 - piano rateale'); o.installments=[newRata('100.00',30,'Rata 1'),newRata('100.00',60,'Rata 2'),newRata('100.00',90,'Rata 3')]; state=[o]; }
+        else if (kind==='split'){ const o=newOption('Tributo con split'); const t1=newTransfer('iban','120.00'); const t2=newTransfer('iban','80.00');
+            const reg=ENTI.find(e=>!e.platform && ibansOf(e.cf).length); if(reg){t2.ente=reg.cf;t2.company=reg.nome;const l=ibansOf(reg.cf);if(l.length)t2.iban=l[0].iban;}
+            o.installments=[{amount:'200.00',dueDate:today(30),description:'',fee:'0',notificationFee:'0',metadata:'',transfers:[t1,t2]}]; state=[o]; }
+        else if (kind==='bollo'){ const o=newOption('Imposta di bollo'); const t=newTransfer('bollo','16.00'); const ag=ENTI.find(e=>/bollo|entrate/i.test(e.nome)); if(ag){t.ente=ag.cf;t.company=ag.nome;}
+            o.installments=[{amount:'16.00',dueDate:today(30),description:'Marca da bollo',fee:'0',notificationFee:'0',metadata:'',transfers:[t]}]; state=[o]; }
+        else if (kind==='alternative'){ const a=newOption('Unica soluzione'); const b=newOption('Piano rateale'); b.installments=[newRata('50.00',30,'Rata 1'),newRata('50.00',60,'Rata 2')]; state=[a,b]; }
+        document.querySelectorAll('.ppa-tpl').forEach(x=>x.classList.remove('active'));
+        if(el) el.classList.add('active'); else { const b=document.querySelector('.ppa-tpl[data-tpl="'+kind+'"]'); if(b)b.classList.add('active'); }
+        render();
+    }
+    function addOption(){ state.push(newOption('Opzione '+(state.length+1))); render(); }
+    function delOption(i){ state.splice(i,1); if(!state.length) state=[newOption()]; render(); }
+    function setTipo(oi,rateale){ const o=state[oi];
+        if(rateale && o.installments.length<2){ o.installments.push(newRata('100.00',60,'Rata 2')); }
+        if(!rateale && o.installments.length>1){ o.installments=[o.installments[0]]; }
+        render(); }
+    function addRata(oi){ state[oi].installments.push(newRata('100.00',30,'Rata '+(state[oi].installments.length+1))); render(); }
+    function delRata(oi,ri){ state[oi].installments.splice(ri,1); if(!state[oi].installments.length) state[oi].installments=[newRata()]; render(); }
+    function splitRata(oi,ri){ const ts=state[oi].installments[ri].transfers; const t=newTransfer('iban','0.00');
+        const reg=ENTI.find(e=>!e.platform && ibansOf(e.cf).length); if(reg){t.ente=reg.cf;t.company=reg.nome;const l=ibansOf(reg.cf);if(l.length)t.iban=l[0].iban;} ts.push(t); render(); }
+    function addTransfer(oi,ri){ const ts=state[oi].installments[ri].transfers; if(ts.length<5){ ts.push(newTransfer('iban','0.00')); render(); } }
+    function delTransfer(oi,ri,ti){ const ts=state[oi].installments[ri].transfers; ts.splice(ti,1); if(!ts.length) ts.push(newTransfer('iban','0.00')); render(); }
+
+    function updO(oi,k,v){ state[oi][k]=v; if(k==='switchToExpired') riepilogo(); }
+    function updR(oi,ri,k,v){ state[oi].installments[ri][k]=v; if(k==='amount') riepilogo(); }
+    function updT(oi,ri,ti,k,v){ state[oi].installments[ri].transfers[ti][k]=v; if(k==='mode') render(); else if(k==='amount') riepilogo(); }
+    function updTr(oi,ri,ti,k,v){ state[oi].installments[ri].transfers[ti][k]=v; }
+
+    // IBAN del transfer: dipende dall'ente beneficiario (ogni ente ha il suo registro). Se l'ente
+    // non ha IBAN registrati (es. ente custom), input libero.
+    function ibanFieldHtml(oi,ri,ti,t){
+        const list=ibansOf(t.ente);
+        if(list.length){ const opts=list.map(x=>`<option value="${esc(x.iban)}" ${x.iban===t.iban?'selected':''}>${esc(x.iban)}${x.desc?(' — '+esc(x.desc)):''}</option>`).join('');
+            return `<div class="col-sm-4"><label class="form-label small mb-0">IBAN <span class="ppa-req">•</span></label><div class="select-wrapper"><select onchange="updTr(${oi},${ri},${ti},'iban',this.value)">${opts}</select></div></div>`; }
+        return `<div class="col-sm-4"><label class="form-label small mb-0">IBAN <span class="ppa-req">•</span></label><input class="form-control form-control-sm" value="${esc(t.iban)}" placeholder="nessun IBAN per questo ente" onchange="updTr(${oi},${ri},${ti},'iban',this.value)"></div>`;
+    }
+    function enteOptions(sel){ const known=ENTI.some(e=>e.cf===sel);
+        return ENTI.map(e=>`<option value="${esc(e.cf)}" ${e.cf===sel?'selected':''}>${esc(e.nome)}${e.platform?' (il tuo ente)':''}</option>`).join('')
+             + `<option value="__custom__" ${!known?'selected':''}>Altro ente (CF libero)…</option>`; }
+
+    // ---------- typeahead tassonomia ----------
+    let _ct;
+    function catSearch(inp,oi,ri,ti){ const q=inp.value; updTr(oi,ri,ti,'category',q);
+        clearTimeout(_ct); _ct=setTimeout(()=>{ fetch('/ente/tassonomie?q='+encodeURIComponent(q)).then(r=>r.json()).then(list=>{
+            const box=document.getElementById('cb-'+oi+'-'+ri+'-'+ti); if(!box) return;
+            box.innerHTML=list.slice(0,30).map(x=>`<button type="button" class="dropdown-item small text-wrap" onclick="pickCat(${oi},${ri},${ti},'${esc(x.code)}')"><code>${esc(x.code)}</code> ${esc(x.label)}</button>`).join('');
+            box.style.display=list.length?'block':'none'; }).catch(()=>{}); },250); }
+    function pickCat(oi,ri,ti,code){ updTr(oi,ri,ti,'category',code); const i=document.getElementById('ci-'+oi+'-'+ri+'-'+ti); if(i)i.value=code; const b=document.getElementById('cb-'+oi+'-'+ri+'-'+ti); if(b)b.style.display='none'; }
+    function pickEnte(oi,ri,ti,v){ const t=state[oi].installments[ri].transfers[ti];
+        if(v==='__custom__'){t.ente='';}else{t.ente=v;const e=ENTI.find(x=>x.cf===v);if(e)t.company=e.nome;}
+        const list=ibansOf(t.ente); t.iban=list.length?list[0].iban:''; // IBAN del nuovo ente
+        render(); }
+    document.addEventListener('click',e=>{ if(!e.target.closest('.catwrap')) document.querySelectorAll('.catbox').forEach(b=>b.style.display='none'); });
+
+    // ---------- render ----------
+    function transferRow(oi,ri,ti,t,split){
+        const isB=t.mode==='bollo'; const id=`${oi}-${ri}-${ti}`;
+        const acc = isB
+          ? `<div class="col-sm-2"><label class="form-label small mb-0">Bollo</label><input class="form-control form-control-sm" value="${esc(t.stampType)}" onchange="updTr(${oi},${ri},${ti},'stampType',this.value)"></div>
+             <div class="col-sm-2"><label class="form-label small mb-0">Prov.</label><input class="form-control form-control-sm" value="${esc(t.province)}" onchange="updTr(${oi},${ri},${ti},'province',this.value)"></div>
+             <div class="col-sm-3"><label class="form-label small mb-0">Hash doc.</label><input class="form-control form-control-sm" value="${esc(t.hashDocument)}" onchange="updTr(${oi},${ri},${ti},'hashDocument',this.value)"></div>`
+          : `${ibanFieldHtml(oi,ri,ti,t)}
+             <div class="col-sm-3 catwrap position-relative"><label class="form-label small mb-0">Tipologia dovuto <span class="ppa-req">•</span></label>
+               <input id="ci-${id}" class="form-control form-control-sm" value="${esc(t.category)}" autocomplete="off" placeholder="scegli dall'elenco pagoPA…" oninput="catSearch(this,${oi},${ri},${ti})" onfocus="catSearch(this,${oi},${ri},${ti})">
+               <div id="cb-${id}" class="dropdown-menu catbox p-1"></div></div>`;
+        const header = split
+          ? `<div class="d-flex justify-content-between align-items-center mb-2">
+               <span class="badge text-bg-light border">Transfer ${ti+1}</span>
+               <button class="btn btn-sm btn-outline-danger" onclick="delTransfer(${oi},${ri},${ti})"><i class="bi bi-trash"></i> Rimuovi</button>
+             </div>`
+          : '';
+        const enteRow = split
+          ? `<div class="row g-2 align-items-end mt-2">
+               <div class="col-sm-6"><label class="form-label small mb-0">Ente beneficiario <span class="ppa-req">•</span></label>
+                 <div class="select-wrapper"><select onchange="pickEnte(${oi},${ri},${ti},this.value)">${enteOptions(t.ente)}</select></div></div>
+               ${ ENTI.some(e=>e.cf===t.ente)?'':`<div class="col-sm-6"><label class="form-label small mb-0">CF ente <span class="ppa-req">•</span></label><input class="form-control form-control-sm" placeholder="Codice fiscale ente" value="${esc(t.ente)}" onchange="updTr(${oi},${ri},${ti},'ente',this.value)"></div>` }
+             </div>`
+          : '';
+        return `<div class="ppa-transfer rounded border p-2 mb-2">
+            ${header}
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-3"><label class="form-label small mb-0">Accredito</label>
+                <div class="select-wrapper"><select onchange="updT(${oi},${ri},${ti},'mode',this.value)"><option value="iban" ${!isB?'selected':''}>IBAN</option><option value="bollo" ${isB?'selected':''}>Marca da bollo</option></select></div></div>
+              ${acc}
+              <div class="col-sm-2"><label class="form-label small mb-0">Importo € ${split?'<span class="ppa-req">•</span>':''}</label><input class="form-control form-control-sm" value="${esc(t.amount)}" onchange="updT(${oi},${ri},${ti},'amount',this.value)"></div>
+            </div>
+            ${enteRow}
+        </div>`;
+    }
+
+    function transfersBlock(oi,ri,r){
+        const split = r.transfers.length>1;
+        const rows = r.transfers.map((t,ti)=>transferRow(oi,ri,ti,t,split)).join('');
+        const addBtns = split
+          ? `<button class="btn btn-sm btn-outline-secondary" onclick="addTransfer(${oi},${ri})" ${r.transfers.length>=5?'disabled':''}><i class="bi bi-plus"></i> Aggiungi ente</button>`
+          : `<button class="btn btn-sm btn-link p-0" onclick="splitRata(${oi},${ri})"><i class="bi bi-diagram-3"></i> Dividi su più enti</button>`;
+        return `<div class="mt-2">${split?'<div class="small text-secondary mb-1">Ripartizione tra enti (split):</div>':''}${rows}${addBtns}</div>`;
+    }
+
+    function rataFields(oi,ri,r,showNum,canDel){
+        return `<div class="${showNum?'border rounded p-2 mb-2':''}">
+            ${showNum?`<div class="d-flex justify-content-between align-items-center mb-1"><strong class="small">Rata ${ri+1}</strong>${canDel?`<button class="btn btn-sm btn-outline-danger" onclick="delRata(${oi},${ri})"><i class="bi bi-trash"></i> Rimuovi rata</button>`:''}</div>`:''}
+            <div class="row g-3">
+              <div class="col-sm-3"><label class="form-label">Importo € <span class="ppa-req">•</span></label><input class="form-control" value="${esc(r.amount)}" onchange="updR(${oi},${ri},'amount',this.value)"></div>
+              <div class="col-sm-3"><label class="form-label">Scadenza <span class="ppa-req">•</span></label><input type="date" class="form-control" value="${esc(r.dueDate)}" onchange="updR(${oi},${ri},'dueDate',this.value)"></div>
+              <div class="col-sm-6"><label class="form-label">Causale ${showNum?'rata':''}</label><input class="form-control" value="${esc(r.description)}" placeholder="es. ${esc(r.description||'TARI 2026')}" onchange="updR(${oi},${ri},'description',this.value)"></div>
+            </div>
+            ${transfersBlock(oi,ri,r)}
+            <div class="accordion accordion-flush" id="ar-${oi}-${ri}">
+              <button class="btn btn-link btn-sm text-decoration-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#radv-${oi}-${ri}"><i class="bi bi-chevron-down"></i> Avanzate rata</button>
+              <div id="radv-${oi}-${ri}" class="collapse"><div class="row g-2 pt-1">
+                <div class="col-sm-3"><label class="form-label small mb-0">Fee (cent)</label><input class="form-control form-control-sm" value="${esc(r.fee)}" onchange="updR(${oi},${ri},'fee',this.value)"></div>
+                <div class="col-sm-3"><label class="form-label small mb-0">Notification fee (cent)</label><input class="form-control form-control-sm" value="${esc(r.notificationFee)}" onchange="updR(${oi},${ri},'notificationFee',this.value)"></div>
+                <div class="col-sm-6"><label class="form-label small mb-0">installmentMetadata (key=value per riga)</label><textarea class="form-control form-control-sm" rows="1" onchange="updR(${oi},${ri},'metadata',this.value)">${esc(r.metadata)}</textarea></div>
+              </div></div>
+            </div>`;
+    }
+
+    function optionHtml(oi,o,multiO){
+        const rateale=o.installments.length>1;
+        let rateHtml;
+        if(rateale){ rateHtml = o.installments.map((r,ri)=>rataFields(oi,ri,r,true,o.installments.length>1)).join('')
+            + `<button class="btn btn-sm btn-outline-secondary" onclick="addRata(${oi})"><i class="bi bi-plus"></i> Aggiungi rata</button>`; }
+        else { rateHtml = rataFields(oi,0,o.installments[0],false,false); }
+        return `<div class="card shadow-sm mb-3">
+          <div class="card-header bg-body d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-diagram-2 text-primary"></i> ${multiO?`Opzione ${oi+1}`:'Pagamento'} ${multiO?'<span class="badge text-bg-info ms-1">alternativa</span>':''}</span>
+            <div class="d-flex align-items-center gap-2">
+              <div class="btn-group btn-group-sm" role="group">
+                <input type="radio" class="btn-check" name="tipo${oi}" id="u${oi}" ${!rateale?'checked':''} onchange="setTipo(${oi},false)"><label class="btn btn-outline-secondary" for="u${oi}">Rata unica</label>
+                <input type="radio" class="btn-check" name="tipo${oi}" id="r${oi}" ${rateale?'checked':''} onchange="setTipo(${oi},true)"><label class="btn btn-outline-secondary" for="r${oi}">Rateale</label>
+              </div>
+              ${multiO?`<button class="btn btn-sm btn-outline-danger" onclick="delOption(${oi})"><i class="bi bi-trash"></i> Rimuovi</button>`:''}
+            </div>
+          </div>
+          <div class="card-body">
+            ${multiO?`<div class="mb-3"><label class="form-label">Descrizione opzione <span class="ppa-req">•</span></label><input class="form-control" value="${esc(o.description)}" onchange="updO(${oi},'description',this.value)"></div>`:`<input type="hidden">`}
+            ${rateHtml}
+            <div class="accordion accordion-flush mt-2">
+              <button class="btn btn-link btn-sm text-decoration-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#oadv-${oi}"><i class="bi bi-chevron-down"></i> Avanzate opzione (scadenza, validità)</button>
+              <div id="oadv-${oi}" class="collapse"><div class="row g-2 pt-1 align-items-end">
+                <div class="col-12">
+                  <div class="toggles"><label class="small" for="se${oi}"><code>switchToExpired</code> — non più pagabile dopo la scadenza (default off = pagabile anche dopo)
+                    <input type="checkbox" id="se${oi}" ${o.switchToExpired?'checked':''} onchange="updO(${oi},'switchToExpired',this.checked)">
+                    <span class="lever"></span></label></div>
+                </div>
+                <div class="col-sm-4"><label class="form-label small mb-0">validityDate (pubbl. differita)</label><input type="date" class="form-control form-control-sm" value="${esc(o.validityDate)}" onchange="updO(${oi},'validityDate',this.value)"></div>
+                <div class="col-sm-4"><label class="form-label small mb-0">retentionDate</label><input type="date" class="form-control form-control-sm" value="${esc(o.retentionDate)}" onchange="updO(${oi},'retentionDate',this.value)"></div>
+              </div></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function render(){ const multiO=state.length>1;
+        document.getElementById('optionsContainer').innerHTML=state.map((o,oi)=>optionHtml(oi,o,multiO)).join('');
+        riepilogo(); }
+
+    function riepilogo(){
+        const multiO=state.length>1; const o0=state[0]; const rate=o0.installments.length;
+        const tot=o0.installments.reduce((s,r)=>s+cents(r.amount),0);
+        const enti=new Set(); state.forEach(o=>o.installments.forEach(r=>r.transfers.forEach(t=>enti.add(t.ente||ENTE_CF))));
+        const tipo = multiO?'opzioni alternative':(rate>1?'piano rateale':'rata unica');
+        const hasBollo = state.some(o=>o.installments.some(r=>r.transfers.some(t=>t.mode==='bollo')));
+        document.getElementById('riepilogo').innerHTML=`
+          <div class="d-flex justify-content-between mb-2"><span class="text-secondary">Tipo</span><span class="badge text-bg-secondary">${tipo}</span></div>
+          <div class="d-flex justify-content-between"><span class="text-secondary">Debitore</span><span class="text-end">${esc(DEB.name||'—')}<br><small class="text-secondary">${esc(DEB.cf||'')}</small></span></div>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between"><span class="text-secondary">Opzioni</span><strong>${state.length}</strong></div>
+          <div class="d-flex justify-content-between"><span class="text-secondary">Rate (1ª opzione)</span><strong>${rate}</strong></div>
+          <div class="d-flex justify-content-between"><span class="text-secondary">Enti beneficiari</span><strong>${enti.size}</strong></div>
+          ${hasBollo?'<div class="d-flex justify-content-between"><span class="text-secondary">Marca da bollo</span><i class="bi bi-postage text-primary"></i></div>':''}
+          <hr class="my-2">
+          <div class="d-flex justify-content-between align-items-center"><span class="text-secondary">Totale</span><span class="fs-4 fw-bold" style="color:var(--ppa-blue)">${eur(tot)} €</span></div>`;
+    }
+
+    // ---------- payload ----------
+    function iso(d){ return d? d+"T00:00:00Z":null; }
+    function kv(s){ return String(s||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.indexOf('=');return i<0?{key:l,value:''}:{key:l.slice(0,i).trim(),value:l.slice(i+1).trim()};}); }
+    function debtor(){ return { type:DEB.type, fiscalCode:DEB.cf, fullName:DEB.name, streetName:DEB.street||null, civicNumber:DEB.civic||null, postalCode:DEB.postal||null, city:DEB.city||null, province:DEB.prov||null, region:DEB.region||null, country:DEB.country||null, email:DEB.email||null, phone:DEB.phone||null }; }
+
+    function buildPayload(){
+        return { payStandIn:HDR.payStandIn, officeName:HDR.officeName||null,
+          paymentOption: state.map(o=>({
+            description:o.description, switchToExpired:!!o.switchToExpired, validityDate:iso(o.validityDate), retentionDate:iso(o.retentionDate),
+            debtor: debtor(),
+            installments:o.installments.map(r=>({
+              amount:cents(r.amount), description:r.description||o.description, dueDate:iso(r.dueDate),
+              fee:intc(r.fee), notificationFee:intc(r.notificationFee), installmentMetadata:kv(r.metadata),
+              transfer:r.transfers.map(t=>{ const base={ amount:cents(t.amount), organizationFiscalCode:t.ente||ENTE_CF, companyName:t.company||ENTE_COMPANY, remittanceInformation:t.remittance||r.description||o.description, category:t.category||'9/0101108TS/', transferMetadata:kv(t.metadata) };
+                return t.mode==='bollo' ? {...base, stamp:{hashDocument:t.hashDocument||'aGFzaA==', stampType:t.stampType||'01', provincialResidence:t.province||'RM'}} : {...base, iban:t.iban, postalIban:t.postalIban||null }; })
+            }))
+          })) };
+    }
+
+    async function submitPosizione(btn){ btn.disabled=true; const old=btn.innerHTML; btn.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Creo...';
+        try{ const resp=await fetch('/ente/posizioni',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildPayload())});
+            const data=await resp.json().catch(()=>({})); if(resp.ok&&data.ok){ window.location=data.redirect; return; }
+            document.getElementById('esitoBox').innerHTML=`<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> GPD ha rifiutato (HTTP ${resp.status}):<pre class="ppa-json mt-2 mb-0">${esc(data.error||'errore')}</pre></div>`;
+            window.scrollTo(0,0);
+        }catch(e){ document.getElementById('esitoBox').innerHTML=`<div class="alert alert-danger">Errore di rete: ${esc(e)}</div>`; }
+        finally{ btn.disabled=false; btn.innerHTML=old; }
+    }
+
+    preset('unica');
+</script>
+}

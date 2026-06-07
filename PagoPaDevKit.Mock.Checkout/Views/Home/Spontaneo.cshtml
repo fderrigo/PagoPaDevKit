@@ -1,0 +1,19 @@
+@{
+    ViewData["Title"] = "Pagamento spontaneo";
+}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h1 class="h4">Pagamento spontaneo</h1>
+        <p class="text-secondary small">L'avviso (NAV/IUV) viene generato on-demand dall'ente per il servizio scelto (primitiva <code>demandPaymentNotice</code>). Nessun controllo lato client.</p>
+        <form method="post" action="/spontaneo" class="row g-2">
+            <div class="col-12"><label class="form-label">Codice fiscale ente</label><input name="fiscalCode" class="form-control" placeholder="77777777777" /></div>
+            <div class="col-12"><label class="form-label">Servizio (codice tassonomico)</label><input name="idServizio" class="form-control" placeholder="9/0101002IM/" /></div>
+            <div class="col-12"><label class="form-label">Causale</label><input name="causale" class="form-control" placeholder="Pagamento spontaneo TARI" /></div>
+            <div class="col-6"><label class="form-label">CF debitore</label><input name="debtorFiscalCode" class="form-control" /></div>
+            <div class="col-6"><label class="form-label">Anagrafica debitore</label><input name="debtorName" class="form-control" /></div>
+            <div class="col-12"><label class="form-label">Importo (€)</label><input name="amountEuro" class="form-control" placeholder="42.00" /></div>
+            <div class="col-12"><button type="submit" class="btn btn-primary w-100">Genera avviso e prosegui</button></div>
+        </form>
+        <p class="mt-3 mb-0"><a href="/">← Torna</a></p>
+    </div>
+</div>

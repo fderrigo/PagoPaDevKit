@@ -1,0 +1,32 @@
+@model StatoServiziVm
+@{
+    ViewData["Title"] = "Stato servizi";
+    ViewData["Section"] = "Infrastruttura";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Stato servizi</h1>
+    <span class="text-secondary small"><i class="bi bi-arrow-repeat"></i> aggiornamento ogni 10s</span>
+</div>
+
+<div class="row g-3">
+    @foreach (var s in Model.Servizi)
+    {
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100" data-health="@s.Name">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="fw-semibold">@s.Name</div>
+                        <div class="text-secondary small">@s.Url</div>
+                        <div class="text-secondary small">latenza: <span data-health-latency>@(s.LatencyMs?.ToString() ?? "—") ms</span></div>
+                    </div>
+                    <span class="badge rounded-pill @(s.Healthy ? "text-bg-success" : "text-bg-danger")" data-health-dot>@(s.Healthy ? "online" : "offline")</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>startHealthPolling('/infrastruttura/health', 10000);</script>
+}

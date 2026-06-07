@@ -1,0 +1,38 @@
+@model AvvisiListVm
+@{
+    ViewData["Title"] = "Stampa avvisi";
+    ViewData["Section"] = "Test Ente";
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<h1 class="h3 mb-1">Stampa avvisi pagoPA</h1>
+<p class="text-secondary">Avviso/bollettino con QR Code, codice avviso (NAV) e dati per i canali CBILL/SIA. Apri in una nuova scheda per stampare (layout senza menu).</p>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Dovuti.Count == 0)
+        {
+            <div class="ppa-empty"><i class="bi bi-printer fs-1 d-block mb-2 text-secondary"></i>Nessuna posizione da stampare. <a href="/ente/crea">Crea una posizione</a>.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Causale</th><th>Debitore</th><th class="text-end">Importo</th><th>NAV</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var d in Model.Dovuti)
+                        {
+                            <tr>
+                                <td>@d.Description</td>
+                                <td>@d.DebtorName</td>
+                                <td class="text-end">@euro(d.Amount) €</td>
+                                <td><code class="small">@d.Nav</code></td>
+                                <td class="text-end"><a class="btn btn-sm btn-outline-dark" target="_blank" href="/ente/dovuti/@d.Iuv/avviso"><i class="bi bi-printer"></i> Apri e stampa</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

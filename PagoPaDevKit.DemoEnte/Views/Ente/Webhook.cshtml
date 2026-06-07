@@ -1,0 +1,51 @@
+@model WebhookVm
+@{
+    ViewData["Title"] = "Log webhook";
+    ViewData["Section"] = "Test Ente";
+}
+
+<h1 class="h3 mb-1">Log webhook</h1>
+<p class="text-secondary">Notifiche <code>paSendRTV2</code> ricevute dalla stazione broadcast dell'ente (push della ricevuta a pagamento avvenuto).</p>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Logs.Count == 0)
+        {
+            <div class="ppa-empty"><i class="bi bi-broadcast fs-1 d-block mb-2 text-secondary"></i>Nessuna notifica ricevuta. Paga un avviso per vederne arrivare una.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>Ricevuto</th><th>NAV</th><th>Receipt ID</th><th class="text-end">Importo</th><th>Esito</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var (l, idx) in Model.Logs.Select((l, i) => (l, i)))
+                        {
+                            <tr>
+                                <td><small>@l.ReceivedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</small></td>
+                                <td><code class="small">@l.Nav</code></td>
+                                <td><code class="small">@l.ReceiptId</code></td>
+                                <td class="text-end">@l.PaymentAmount.ToString("N2", CultureInfo.GetCultureInfo("it-IT")) €</td>
+                                <td>
+                                    @if (l.Matched)
+                                    {
+                                        <span class="badge text-bg-success">elaborato</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">scartato</span>
+                                    }
+                                </td>
+                                <td><a class="small" data-bs-toggle="collapse" href="#wl-@idx">payload</a></td>
+                            </tr>
+                            <tr class="collapse" id="wl-@idx">
+                                <td colspan="6"><pre class="ppa-json bg-body-tertiary p-2 rounded mb-0">@l.Payload
+esito elaborazione: @l.ProcessResult</pre></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

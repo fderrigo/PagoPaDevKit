@@ -1,0 +1,119 @@
+name: pagopadevkit
+
+services:
+  gpd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: PagoPaDevKit.Mock.Gpd/PagoPaDevKit.Mock.Gpd.csproj
+        DLL: PagoPaDevKit.Mock.Gpd.dll
+    environment:
+      ASPNETCORE_URLS: http://+:5001
+      Gpd__SubscriptionKey: dev-gpd-key
+      # Stazione broadcast dell'EC: il GPD fa push della RT (paSendRT) qui (modello async consigliato).
+      Gpd__StationUrl: http://demoente:5003/stazione/paForNode.svc
+      # DB su volume: persiste tra recreate del container.
+      ConnectionStrings__Gpd: Data Source=/data/gpd.db
+    volumes:
+      - gpd-data:/data
+    ports:
+      - "5001:5001"
+
+  nodo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: PagoPaDevKit.Mock.Nodo/PagoPaDevKit.Mock.Nodo.csproj
+        DLL: PagoPaDevKit.Mock.Nodo.dll
+    environment:
+      ASPNETCORE_URLS: http://+:5004
+      # Il Nodo chiama l'EC (GPD) via SOAP paForNode.
+      Nodo__GpdBaseUrl: http://gpd:5001
+    ports:
+      - "5004:5004"
+    depends_on:
+      - gpd
+
+  checkout:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: PagoPaDevKit.Mock.Checkout/PagoPaDevKit.Mock.Checkout.csproj
+        DLL: PagoPaDevKit.Mock.Checkout.dll
+    environment:
+      ASPNETCORE_URLS: http://+:5002
+      # Il Checkout (PSP) chiama il NODO via SOAP nodeForPsp.
+      Checkout__NodoBaseUrl: http://nodo:5004
+      # GET payment-options direttamente su GPD.
+      Checkout__GpdBaseUrl: http://gpd:5001
+      Checkout__SubscriptionKey: dev-gpd-key
+    ports:
+      - "5002:5002"
+    depends_on:
+      - nodo
+
+  apiconfig:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: PagoPaDevKit.Mock.ApiConfig/PagoPaDevKit.Mock.ApiConfig.csproj
+        DLL: PagoPaDevKit.Mock.ApiConfig.dll
+    environment:
+      ASPNETCORE_URLS: http://+:5005
+      ApiConfig__SubscriptionKey: dev-gpd-key
+      # DB su volume: gli IBAN configurati persistono tra recreate.
+      ConnectionStrings__ApiConfig: Data Source=/data/apiconfig.db
+    volumes:
+      - apiconfig-data:/data
+    ports:
+      - "5005:5005"
+
+  demoente:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT: PagoPaDevKit.DemoEnte/PagoPaDevKit.DemoEnte.csproj
+        DLL: PagoPaDevKit.DemoEnte.dll
+    environment:
+      ASPNETCORE_URLS: http://+:5003
+      PagoPaGpd__BaseUrl: http://gpd:5001
+      PagoPaGpd__SubscriptionKey: dev-gpd-key
+      # Registro IBAN + tassonomia dell'ente.
+      ApiConfig__BaseUrl: http://apiconfig:5005
+      ApiConfig__SubscriptionKey: dev-gpd-key
+      # Carts API server-to-server (nome servizio Docker).
+      Ente__CheckoutApiUrl: http://checkout:5002
+      # Redirect del browser del cittadino: deve usare localhost.
+      Ente__CheckoutBaseUrl: http://localhost:5002
+      Ente__ReturnUrl: http://localhost:5003/esito
+      # Stepper "Test Cittadino" in-console: chiama il NODO via nodeForPsp.
+      Ente__NodoBaseUrl: http://nodo:5004
+      # URL per health check + scenari (nomi servizio Docker).
+      Servizi__GPD: http://gpd:5001
+      Servizi__Checkout: http://checkout:5002
+      # Self-ping leggero su /healthz (loopback interno; evita di rieseguire la Dashboard).
+      Servizi__DemoEnte: http://localhost:5003/healthz
+      Servizi__Nodo: http://nodo:5004
+      Servizi__ApiConfig: http://apiconfig:5005
+      # DB su volume: le posizioni locali persistono tra recreate.
+      ConnectionStrings__Ente: Data Source=/data/ente.db
+    volumes:
+      - ente-data:/data
+    ports:
+      - "5003:5003"
+    depends_on:
+      - gpd
+      - apiconfig
+      - checkout
+      - nodo
+
+# Volumi per persistere i DB SQLite tra recreate/rebuild dei container.
+volumes:
+  gpd-data:
+  apiconfig-data:
+  ente-data:

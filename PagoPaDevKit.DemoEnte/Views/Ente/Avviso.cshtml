@@ -1,0 +1,61 @@
+@model AvvisoVm
+@{
+    ViewData["Title"] = "Avviso di pagamento";
+    Layout = "_LayoutPrint";
+    var d = Model.Dovuto;
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    string nav = d.Nav;
+    string navFmt = nav.Length == 18 ? $"{nav[..4]} {nav.Substring(4, 4)} {nav.Substring(8, 4)} {nav.Substring(12, 4)} {nav[16..]}" : nav;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 ppa-noprint">
+    <a href="/ente/avvisi" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Indietro</a>
+    <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Stampa</button>
+</div>
+
+<div class="border rounded-3 p-4 bg-white">
+    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+        <div>
+            <div class="text-secondary small">ENTE CREDITORE</div>
+            <h2 class="h4 mb-0">@Model.CompanyName</h2>
+            <div class="text-secondary small">Cod. Fiscale @Model.Ofc</div>
+        </div>
+        <div class="text-end">
+            <div class="fw-bold fs-5" style="color:var(--ppa-blue)">pagoPA</div>
+            <div class="text-secondary small">AVVISO DI PAGAMENTO</div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-sm-6">
+            <div class="text-secondary small">DESTINATARIO</div>
+            <div class="fw-semibold">@d.DebtorName</div>
+            <div class="text-secondary small">@d.DebtorFiscalCode</div>
+        </div>
+        <div class="col-sm-6">
+            <div class="text-secondary small">QUANTO E QUANDO PAGARE?</div>
+            <div class="fs-3 fw-bold" style="color:var(--ppa-blue)">@euro(d.Amount) €</div>
+            <div>entro il <strong>@d.DueDate.ToString("dd/MM/yyyy")</strong></div>
+            <div class="text-secondary small mt-2">CAUSALE</div>
+            <div>@d.Description</div>
+        </div>
+    </div>
+
+    <div class="row align-items-center border-top pt-3">
+        <div class="col-sm-7">
+            <div class="text-secondary small">PAGA SUL SITO O CON LE APP</div>
+            <p class="mb-2">Inquadra il QR Code con l'app IO o la tua banca, oppure usa i dati accanto.</p>
+            <div class="text-secondary small">PAGA PRESSO BANCHE E ALTRI CANALI</div>
+            <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-secondary">Codice CBILL/SIA</td><td class="fw-semibold">@Model.CodiceSia</td></tr>
+                <tr><td class="text-secondary">Codice avviso</td><td class="fw-semibold">@navFmt</td></tr>
+                <tr><td class="text-secondary">Cod. Fiscale Ente</td><td class="fw-semibold">@Model.Ofc</td></tr>
+                <tr><td class="text-secondary">Importo</td><td class="fw-semibold">@euro(d.Amount) €</td></tr>
+            </table>
+        </div>
+        <div class="col-sm-5 text-center">
+            <img src="data:image/png;base64,@Model.QrPngBase64" alt="QR pagoPA" style="width:190px;height:190px" />
+            <div class="text-secondary" style="word-break:break-all;font-size:.65rem">@Model.QrPayload</div>
+        </div>
+    </div>
+</div>

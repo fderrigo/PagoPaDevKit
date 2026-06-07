@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Documentazione";
+}
+
+<h1 class="h3 mb-3">Documentazione</h1>
+
+<div class="alert alert-info"><i class="bi bi-info-circle"></i> <strong>Progetto open source indipendente, non affiliato a PagoPA S.p.A. Emulatore a scopo di sviluppo e formazione, fornito senza alcuna garanzia.</strong> I contratti (REST GPD v3, SOAP nodeForPsp/paForNode, Receipts, FdR) ricalcano quelli ufficiali: il codice client gira identico verso mock e UAT cambiando solo la configurazione.</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-building me-1"></i> Test Ente</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a href="/ente/crea">Crea posizione</a> — posizione debitoria GPD v3 (create+publish), tassonomia, IBAN, importo in centesimi.</li>
+                <li class="list-group-item"><a href="/ente/posizioni">Posizioni debitorie</a> — lista con filtri, dettaglio, pubblica/elimina.</li>
+                <li class="list-group-item"><a href="/ente/ricevute">Ricevute</a> — RT da Receipts REST.</li>
+                <li class="list-group-item"><a href="/ente/webhook">Log webhook</a> — notifiche paSendRTV2 ricevute in push.</li>
+                <li class="list-group-item"><a href="/ente/avvisi">Stampa avvisi</a> — avviso pagoPA con QR (PAGOPA|002), CBILL/SIA.</li>
+                <li class="list-group-item"><a href="/riconciliazione">Riconciliazione</a> — modello SANP (lato banca <strong>mockato</strong>).</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-person me-1"></i> Test Cittadino</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a href="/cittadino/paga">Paga un avviso</a> — stepper verify → activate → notify → outcome via Nodo.</li>
+                <li class="list-group-item"><a href="/cittadino/opzioni">Opzioni di pagamento</a> — rata unica / piani rateali (payment-options).</li>
+                <li class="list-group-item"><a href="/cittadino/spontaneo">Pagamento spontaneo</a> — avviso on-demand (demandPaymentNotice).</li>
+                <li class="list-group-item"><a href="/cittadino/carte">Carte di test</a> — esiti deterministici.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-hdd-network me-1"></i> Infrastruttura</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a href="/infrastruttura">Stato servizi</a> — health live GPD/Checkout/Nodo/ApiConfig.</li>
+                <li class="list-group-item"><a href="/infrastruttura/scenari">Scenari di test</a> — end-to-end su API reali (ciclo OK, carta KO/scaduta, 401, 409 IUPD dup, avviso scaduto, QR/NAV).</li>
+                <li class="list-group-item"><a href="/infrastruttura/strumenti">Strumenti</a> — generatore IUV/NAV, registro IBAN, seed/reset.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-diagram-3 me-1"></i> Servizi della solution</div>
+            <ul class="list-group list-group-flush small">
+                <li class="list-group-item">GPD <span class="text-secondary">:5001</span> — posizioni debitorie v3, Receipts, payment-options, e-bollo, FdR, SOAP paForNode.</li>
+                <li class="list-group-item">Checkout <span class="text-secondary">:5002</span> — gateway PSP/WISP, Carts API.</li>
+                <li class="list-group-item">DemoEnte <span class="text-secondary">:5003</span> — questo console + stazione SOAP broadcast.</li>
+                <li class="list-group-item">Nodo <span class="text-secondary">:5004</span> — nodeForPsp + nodeForPa (FdR).</li>
+                <li class="list-group-item">ApiConfig <span class="text-secondary">:5005</span> — registro IBAN + tassonomia.</li>
+            </ul>
+        </div>
+    </div>
+</div>

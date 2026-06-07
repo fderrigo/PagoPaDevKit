@@ -1,0 +1,30 @@
+/* Checkout — personalizzazioni su Bootstrap Italia. */
+@font-face { font-family: "Titillium Web"; font-weight: 400; font-display: swap;
+  src: url("/lib/bootstrap-italia/fonts/titillium-web-400.woff2") format("woff2"); }
+@font-face { font-family: "Titillium Web"; font-weight: 600; font-display: swap;
+  src: url("/lib/bootstrap-italia/fonts/titillium-web-600.woff2") format("woff2"); }
+@font-face { font-family: "Titillium Web"; font-weight: 700; font-display: swap;
+  src: url("/lib/bootstrap-italia/fonts/titillium-web-700.woff2") format("woff2"); }
+@font-face { font-family: "Roboto Mono"; font-weight: 400; font-display: swap;
+  src: url("/lib/bootstrap-italia/fonts/roboto-mono-400.woff2") format("woff2"); }
+
+code, pre { font-family: "Roboto Mono", monospace; }
+.ppa-ic { width: 1.15em; height: 1.15em; fill: currentColor; vertical-align: -0.15em; flex-shrink: 0; }
+/* Una sola icona negli alert (BI la inietta come background-image): disattivata, usiamo la nostra <i>. */
+.alert, .alert-primary, .alert-secondary, .alert-success, .alert-danger,
+.alert-warning, .alert-info, .alert-light, .alert-dark {
+  background-image: none !important;
+  padding-left: 1rem !important;
+}
+.ppa-amount { font-size: 1.9rem; font-weight: 700; color: var(--bs-primary); }
+.ppa-pay-shell { max-width: 560px; }
+/* Header BI: sfondo scuro + testo bianco (contrasto leggibile) */
+.it-header-slim-wrapper { background: #102438 !important; }
+.it-header-center-wrapper { background: #17324d !important; }
+.it-header-wrapper, .it-header-wrapper a, .it-header-wrapper .navbar-brand,
+.it-header-wrapper .it-brand-title, .it-header-wrapper .it-brand-tagline { color: #fff !important; }
+.it-header-wrapper .icon { fill: #fff; }
+/* Footer BI: sfondo scuro + testo bianco */
+.it-footer .it-footer-small-prints { background: #102438; }
+.it-footer, .it-footer a, .it-footer .list-inline-item { color: #fff !important; }
+.it-footer a:hover { color: #9ec5fe !important; }

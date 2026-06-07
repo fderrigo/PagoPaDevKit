@@ -1,0 +1,18 @@
+@model JsonAccordionVm
+<div class="accordion" id="acc-@Model.Id">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#body-@Model.Id">
+                <i class="bi bi-braces me-2"></i> @Model.Title
+            </button>
+        </h2>
+        <div id="body-@Model.Id" class="accordion-collapse collapse" data-bs-parent="#acc-@Model.Id">
+            <div class="accordion-body">
+                <div class="d-flex justify-content-end mb-2">
+                    <button class="btn btn-sm btn-outline-secondary ppa-copy" data-copy="@Model.Json"><i class="bi bi-clipboard"></i> Copia</button>
+                </div>
+                <pre class="ppa-json bg-body-tertiary p-3 rounded border">@Model.Json</pre>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,64 @@
+@model SpontaneoVm
+@{
+    ViewData["Title"] = "Pagamento spontaneo";
+    ViewData["Section"] = "Test Cittadino";
+}
+
+<h1 class="h3 mb-1">Pagamento spontaneo</h1>
+<p class="text-secondary">Avviso generato on-demand (<code>demandPaymentNotice</code>): il cittadino paga un servizio senza un avviso preesistente. Differisce dal <em>pagamento da avviso</em>, dove la posizione è già emessa dall'ente.</p>
+
+@if (!string.IsNullOrEmpty(Model.ResultNav))
+{
+    <div class="alert alert-success d-flex justify-content-between align-items-center">
+        <div>Avviso spontaneo generato. NAV: <code class="fs-6">@Model.ResultNav</code></div>
+        <a class="btn btn-sm btn-primary" href="/cittadino/paga?nav=@Model.ResultNav"><i class="bi bi-credit-card"></i> Paga ora</a>
+    </div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div class="card shadow-sm" style="max-width:640px">
+    <div class="card-body">
+        <form method="post" action="/cittadino/spontaneo" data-loading>
+            <div class="mb-3">
+                <div class="select-wrapper">
+                <label>Servizio (tassonomia)</label>
+                <select name="idServizio">
+                    @if (Model.Servizi.Count == 0)
+                    {
+                        <option value="9/0101108TS/">9/0101108TS/</option>
+                    }
+                    else
+                    {
+                        @foreach (var t in Model.Servizi.Take(300))
+                        {
+                            <option value="@t.CodiceTassonomico">@t.CodiceTassonomico — @t.DenominazioneServizio</option>
+                        }
+                    }
+                </select>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">CF debitore</label>
+                    <input name="debtorFiscalCode" class="form-control" required value="RSSMRA80A01H501U" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Nominativo debitore</label>
+                    <input name="debtorName" class="form-control" required value="Mario Rossi" />
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Causale</label>
+                    <input name="causale" class="form-control" required value="Pagamento spontaneo servizio" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Importo (€)</label>
+                    <input name="amountEuro" class="form-control" required value="20.00" inputmode="decimal" />
+                </div>
+            </div>
+            <button class="btn btn-primary mt-3" data-loading-text="Genero..."><i class="bi bi-hand-index"></i> Genera avviso spontaneo</button>
+        </form>
+    </div>
+</div>

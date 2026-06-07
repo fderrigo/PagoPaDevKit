@@ -1,0 +1,151 @@
+@model StrumentiVm
+@{
+    ViewData["Title"] = "Strumenti";
+    ViewData["Section"] = "Infrastruttura";
+}
+
+<h1 class="h3 mb-3">Strumenti</h1>
+
+<div class="row g-3">
+    <!-- Generatore IUV/NAV -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-upc-scan me-1"></i> Generatore IUV / NAV</div>
+            <div class="card-body">
+                <p class="text-secondary small">L'IUV (17 cifre) identifica il versamento: <code>[segregation 2][progressivo 13][check 2]</code>. Il NAV = aux digit <code>3</code> + IUV (18 cifre). Segregation code ente: <strong>@Model.SegregationCode.ToString("D2")</strong>.</p>
+                <button class="btn btn-outline-primary" onclick="genIuv()"><i class="bi bi-shuffle"></i> Genera</button>
+                <div id="iuvResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dati demo / reset -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-database me-1"></i> Dati demo</div>
+            <div class="card-body">
+                <p class="text-secondary small">Popola rapidamente il gestionale con 10 posizioni realistiche, oppure azzera i dati.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="post" action="/infrastruttura/strumenti/seed" data-loading>
+                        <button class="btn btn-outline-success" data-loading-text="Genero..."><i class="bi bi-magic"></i> Seed 10 posizioni demo</button>
+                    </form>
+                    <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetModal"><i class="bi bi-eraser"></i> Reset dati locali</button>
+                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#resetFullModal"><i class="bi bi-trash"></i> Reset completo (anche GPD)</button>
+                </div>
+                <div class="form-text mt-2">
+                    <strong>Locale</strong>: svuota solo la vista del gestionale (posizioni + log webhook).<br>
+                    <strong>Completo</strong>: azzera anche posizioni, ricevute, marche e FdR su GPD. <strong>IBAN e tassonomie restano</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registro IBAN -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-body"><i class="bi bi-bank me-1"></i> Registro IBAN (ApiConfig) — @Model.CompanyName</div>
+            <div class="card-body">
+                <form method="post" action="/ibans" class="row g-2 mb-3 ppa-compact">
+                    <div class="col-sm-5"><input name="iban" class="form-control" placeholder="IBAN" required value="IT60X0542811101000000123456" /></div>
+                    <div class="col-sm-4"><input name="description" class="form-control" placeholder="Descrizione" /></div>
+                    <div class="col-sm-2"><input name="label" class="form-control" placeholder="Etichetta" /></div>
+                    <div class="col-sm-1"><button class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button></div>
+                </form>
+                @if (Model.Ibans.Count == 0)
+                {
+                    <div class="text-secondary small">Nessun IBAN configurato. Senza un IBAN attivo GPD rifiuta la creazione delle posizioni.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead><tr><th>IBAN</th><th>Descrizione</th><th>Attivo</th><th>Etichette</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var i in Model.Ibans)
+                                {
+                                    <tr>
+                                        <td><code>@i.Iban</code></td>
+                                        <td>@i.Description</td>
+                                        <td>@(i.IsActive ? Html.Raw("<span class='badge text-bg-success'>sì</span>") : Html.Raw("<span class='badge text-bg-secondary'>no</span>"))</td>
+                                        <td>@string.Join(", ", i.Labels.Select(l => l.Name))</td>
+                                        <td class="text-end">
+                                            <form method="post" action="/ibans/@i.Iban/delete" onsubmit="return confirm('Eliminare @i.Iban?')">
+                                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal reset (doppia conferma) -->
+<div class="modal fade" id="resetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title text-danger">Reset dati locali</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p>Verranno eliminate <strong>tutte le posizioni locali e i log webhook</strong> del gestionale. Le posizioni su GPD non vengono toccate.</p>
+                <div class="form-check">
+                    <input type="checkbox" id="confirmReset" onchange="document.getElementById('resetBtn').disabled = !this.checked" />
+                    <label for="confirmReset">Confermo di voler azzerare i dati locali.</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="post" action="/infrastruttura/strumenti/reset">
+                    <button id="resetBtn" class="btn btn-danger" disabled><i class="bi bi-trash"></i> Azzera</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal reset completo (anche GPD) -->
+<div class="modal fade" id="resetFullModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title text-danger">Reset completo</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p>Verranno eliminati <strong>definitivamente</strong>, oltre ai dati locali del gestionale:</p>
+                <ul>
+                    <li>tutte le <strong>posizioni debitorie</strong> dell'ente su GPD</li>
+                    <li>tutte le <strong>ricevute (RT)</strong></li>
+                    <li>tutte le <strong>marche da bollo</strong> e i <strong>Flussi di Rendicontazione (FdR)</strong></li>
+                </ul>
+                <p class="mb-2"><i class="bi bi-shield-check text-success"></i> <strong>IBAN e tassonomie restano</strong> (vivono su ApiConfig, non vengono toccati).</p>
+                <div class="form-check">
+                    <input type="checkbox" id="confirmResetFull" onchange="document.getElementById('resetFullBtn').disabled = !this.checked" />
+                    <label for="confirmResetFull">Confermo di voler azzerare tutti i dati dell'ente (locali + GPD).</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="post" action="/infrastruttura/strumenti/reset-completo">
+                    <button id="resetFullBtn" class="btn btn-danger" disabled><i class="bi bi-trash"></i> Azzera tutto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function genIuv() {
+            fetch('/infrastruttura/strumenti/iuv').then(r => r.json()).then(function (x) {
+                document.getElementById('iuvResult').innerHTML =
+                    '<div class="border rounded p-3 bg-body-tertiary">' +
+                    '<div class="mb-2">NAV: <code class="fs-5">' + x.nav + '</code> ' +
+                    '<button class="btn btn-sm btn-link p-0 ppa-copy" data-copy="' + x.nav + '"><i class="bi bi-clipboard"></i></button></div>' +
+                    '<div class="small text-secondary">aux <strong>' + x.auxDigit + '</strong> · segregation <strong>' + x.segregation +
+                    '</strong> · progressivo <strong>' + x.progressivo + '</strong> · check <strong>' + x.check + '</strong></div>' +
+                    '<div class="small mt-1">IUV: <code>' + x.iuv + '</code></div></div>';
+            });
+        }
+    </script>
+}

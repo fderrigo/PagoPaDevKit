@@ -1,0 +1,64 @@
+@model CartVm
+@using System.Globalization
+@{
+    ViewData["Title"] = "Pagamento avvisi";
+    string euro(decimal v) => v.ToString("0.00", CultureInfo.InvariantCulture) + " €";
+}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h1 class="h4 mb-1">Pagamento pagoPA</h1>
+        <p class="text-secondary small">Carrello di @Model.Items.Count avviso/i (max 5) — ente @Model.FiscalCode</p>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Avviso</th><th>Causale</th><th class="text-end">Importo</th></tr></thead>
+                <tbody>
+                    @foreach (var i in Model.Items)
+                    {
+                        <tr>
+                            <td><code class="small">@i.Nav</code><br /><span class="text-secondary small">@i.CompanyName</span></td>
+                            <td>@i.Description</td>
+                            <td class="text-end">@euro(i.Amount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="text-end ppa-amount mb-3">Totale @euro(Model.Total)</div>
+
+        <form method="post" action="/pagamento">
+            @if (!string.IsNullOrEmpty(Model.CartId))
+            {
+                <input type="hidden" name="cartId" value="@Model.CartId" />
+            }
+            else
+            {
+                @foreach (var i in Model.Items)
+                {
+                    <input type="hidden" name="nav" value="@i.Nav" />
+                }
+                <input type="hidden" name="fiscalCode" value="@Model.FiscalCode" />
+                @if (!string.IsNullOrEmpty(Model.ReturnUrl))
+                {
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                }
+            }
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label">Numero carta (PAN)</label>
+                    <input name="pan" class="form-control" inputmode="numeric" placeholder="4242 4242 4242 4242" value="4242424242424242" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Scadenza (MM/AA)</label>
+                    <input name="exp" class="form-control" placeholder="12/30" value="12/30" />
+                </div>
+                <div class="col-6">
+                    <label class="form-label">CVV</label>
+                    <input name="cvv" class="form-control" inputmode="numeric" placeholder="123" value="123" />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-lock"></i> Paga @euro(Model.Total)</button>
+        </form>
+        <p class="text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> Carte di test: <code>4242…4242</code> OK · <code>4000…0002</code> negata · <code>4000…0069</code> scaduta</p>
+    </div>
+</div>

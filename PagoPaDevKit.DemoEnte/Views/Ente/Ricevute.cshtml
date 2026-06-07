@@ -1,0 +1,45 @@
+@model RicevuteVm
+@{
+    ViewData["Title"] = "Ricevute";
+    ViewData["Section"] = "Test Ente";
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<h1 class="h3 mb-3">Ricevute (RT)</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Ricevute.Count == 0)
+        {
+            <div class="ppa-empty"><i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>Nessuna ricevuta. Paga un avviso per generarne una.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead><tr><th>IUV</th><th>Debitore</th><th class="text-end">Importo</th><th class="text-end">Commissione</th><th>Data pagamento</th><th>Consegna</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model.Ricevute)
+                        {
+                            <tr>
+                                <td><code class="small">@r.Iuv</code></td>
+                                <td>@r.Debtor</td>
+                                <td class="text-end fw-semibold">@euro(r.PaymentAmount) €</td>
+                                <td class="text-end">@euro(r.Fee) €</td>
+                                <td>@r.PaymentDateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (r.HasMetadata)
+                                    {
+                                        <span class="badge text-bg-info" title="Contiene metadata di riconciliazione">metadata</span>
+                                    }
+                                    <span class="badge text-bg-light border">@r.DeliveryStatus</span>
+                                </td>
+                                <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/ente/dovuti/@r.Iuv/ricevuta"><i class="bi bi-eye"></i> Dettaglio</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

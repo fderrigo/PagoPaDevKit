@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Checkout pagoPA (mock)";
+}
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h1 class="h4">Checkout pagoPA <span class="text-secondary fs-6">(mock)</span></h1>
+        <p class="text-secondary">Due modalità di pagamento, come nel sistema reale.</p>
+
+        <h2 class="h6 mt-3"><i class="bi bi-upc-scan"></i> 1) Pagamento da avviso</h2>
+        <p class="text-secondary small">Hai già un avviso (NAV) rilasciato dall'ente.</p>
+        <form method="get" action="/pagamento" class="row g-2">
+            <div class="col-12"><label class="form-label">Numero avviso (NAV)</label><input name="nav" class="form-control" placeholder="3 + IUV (18 cifre)" /></div>
+            <div class="col-12"><label class="form-label">Codice fiscale ente</label><input name="fiscalCode" class="form-control" placeholder="77777777777" /></div>
+            <div class="col-12"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Verifica e paga avviso</button></div>
+        </form>
+    </div>
+</div>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h6"><i class="bi bi-hand-index"></i> 2) Pagamento spontaneo</h2>
+        <p class="text-secondary small mb-2">Nessun avviso: scegli un servizio e l'avviso viene generato su richiesta.</p>
+        <a href="/spontaneo" class="btn btn-outline-primary">Avvia pagamento spontaneo →</a>
+    </div>
+</div>

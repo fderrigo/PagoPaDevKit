@@ -1,0 +1,6 @@
+@using PagoPaDevKit.DemoEnte.ViewComponents
+@model List<ComponenteLink>
+@foreach (var c in Model)
+{
+    <li><a class="list-item" href="@c.Url" target="_blank" rel="noopener" title="@c.Descr">@c.Label</a></li>
+}

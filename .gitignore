@@ -1,0 +1,44 @@
+# ---- Build output ----
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Pp]ublish/
+artifacts/
+
+# ---- .NET / Visual Studio / Rider ----
+*.user
+*.suo
+*.userprefs
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+
+# ---- Test results / coverage ----
+[Tt]est[Rr]esults/
+*.coverage
+*.coveragexml
+coverage/
+
+# ---- Local databases (SQLite) ----
+*.db
+*.db-shm
+*.db-wal
+
+# ---- Docker named-volume data (mounted at runtime) ----
+/data/
+**/data/*.db*
+
+# ---- OS noise ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Internal / working artifacts (kept local, not published) ----
+prompt.txt
+crea.png
+crea2.png

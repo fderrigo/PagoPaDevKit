@@ -1,0 +1,187 @@
+@model DettaglioVm
+@{
+    ViewData["Title"] = "Dettaglio posizione";
+    ViewData["Section"] = "Test Ente";
+    var d = Model.Dovuto;
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    var pos = Model.Posizione;
+    var inst = pos?.PaymentOption.FirstOrDefault()?.Installments.FirstOrDefault();
+
+    var timeline = new List<(DateTimeOffset? When, string Label, string Icon, bool Done)>
+    {
+        (d.CreatedAt, "Posizione creata", "bi-plus-circle", true),
+        (pos?.PublishDate, "Posizione pubblicata", "bi-megaphone", pos?.PublishDate != null),
+        (d.PaidAt, "Pagamento ricevuto (webhook RT)", "bi-cash-coin", d.PaidAt != null),
+    };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <a href="/ente/posizioni" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> Posizioni</a>
+        <h1 class="h3 mb-0">@d.Description</h1>
+    </div>
+    <partial name="_StatoBadge" model="@d.Status" />
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-body"><i class="bi bi-info-circle me-1"></i> Dati posizione</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-secondary">IUPD</dt><dd class="col-sm-8"><code>@d.Iupd</code></dd>
+                    <dt class="col-sm-4 text-secondary">IUV</dt><dd class="col-sm-8"><code>@d.Iuv</code></dd>
+                    <dt class="col-sm-4 text-secondary">Codice avviso (NAV)</dt>
+                    <dd class="col-sm-8"><code>@d.Nav</code> <button class="btn btn-sm btn-link p-0 ppa-copy" data-copy="@d.Nav"><i class="bi bi-clipboard"></i></button></dd>
+                    <dt class="col-sm-4 text-secondary">Debitore</dt><dd class="col-sm-8">@d.DebtorName <span class="text-secondary">(@d.DebtorFiscalCode)</span></dd>
+                    <dt class="col-sm-4 text-secondary">Importo</dt><dd class="col-sm-8 fw-semibold">@euro(d.Amount) €</dd>
+                    <dt class="col-sm-4 text-secondary">Scadenza</dt><dd class="col-sm-8">@d.DueDate.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-4 text-secondary">Stato GPD</dt><dd class="col-sm-8">@(pos?.Status ?? "—") / rata @(inst?.Status ?? "—")</dd>
+                    @if (d.Status == "PAGATO")
+                    {
+                        <dt class="col-sm-4 text-secondary">PSP</dt><dd class="col-sm-8">@d.PspCompanyName</dd>
+                        <dt class="col-sm-4 text-secondary">Commissione</dt><dd class="col-sm-8">@(d.Fee.HasValue ? euro(d.Fee.Value) + " €" : "—")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        @if (pos is not null && pos.PaymentOption.Count > 0)
+        {
+            string st(string? s) => s switch { "PAID" or "REPORTED" or "PARTIALLY_REPORTED" => "PAGATO", "EXPIRED" => "SCADUTO", _ => "DA PAGARE" };
+            bool multiOpt = pos.PaymentOption.Count > 1;
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-body">
+                    <i class="bi bi-diagram-2 me-1"></i> Struttura (@pos.PaymentOption.Count opzion@(multiOpt ? "i alternative" : "e"))
+                </div>
+                <div class="card-body">
+                    @for (int oi = 0; oi < pos.PaymentOption.Count; oi++)
+                    {
+                        var po = pos.PaymentOption[oi];
+                        bool rateale = po.Installments.Count > 1;
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>Opzione @(oi + 1)</strong>
+                                <span>
+                                    @if (multiOpt) { <span class="badge text-bg-info">alternativa</span> }
+                                    <span class="badge text-bg-light border">@(rateale ? $"rateale · {po.Installments.Count} rate" : "rata unica")</span>
+                                    <span class="badge text-bg-light border">debitore @po.Debtor.Type</span>
+                                </span>
+                            </div>
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Rata</th><th>NAV</th><th class="text-end">Importo</th><th>Scad.</th><th>Stato</th><th class="text-end">Azioni</th></tr></thead>
+                                <tbody>
+                                    @foreach (var (i, ri) in po.Installments.Select((x, k) => (x, k)))
+                                    {
+                                        string nav = i.Nav ?? "";
+                                        string stato = st(i.Status);
+                                        <tr>
+                                            <td>@(ri + 1)<br /><span class="text-secondary small">@i.Description</span></td>
+                                            <td><code class="small">@nav</code></td>
+                                            <td class="text-end fw-semibold">@euro(i.Amount) €</td>
+                                            <td>@i.DueDate.ToString("dd/MM/yyyy")</td>
+                                            <td><partial name="_StatoBadge" model="@stato" /></td>
+                                            <td class="text-end text-nowrap">
+                                                <a class="btn btn-sm btn-outline-secondary" target="_blank" href="/ente/dovuti/@i.Iuv/avviso?iupd=@Uri.EscapeDataString(d.Iupd)" title="Stampa avviso"><i class="bi bi-printer"></i></a>
+                                                @if (stato == "PAGATO")
+                                                {
+                                                    <a class="btn btn-sm btn-outline-success" href="/ente/dovuti/@i.Iuv/ricevuta?iupd=@Uri.EscapeDataString(d.Iupd)" title="Ricevuta"><i class="bi bi-receipt"></i></a>
+                                                }
+                                                else
+                                                {
+                                                    <a class="btn btn-sm btn-primary" href="/cittadino/paga?nav=@nav" title="Paga"><i class="bi bi-credit-card"></i></a>
+                                                }
+                                            </td>
+                                        </tr>
+                                        @if (i.Transfer.Count > 1 || i.Transfer.Any(t => t.Stamp is not null))
+                                        {
+                                            <tr class="table-light">
+                                                <td colspan="6">
+                                                    <span class="text-secondary small">Transfer (split):</span>
+                                                    <ul class="small mb-0">
+                                                        @foreach (var t in i.Transfer)
+                                                        {
+                                                            <li>
+                                                                @euro(t.Amount) € →
+                                                                @if (t.Stamp is not null)
+                                                                { <span><i class="bi bi-postage"></i> marca da bollo (@t.Stamp.StampType, @t.Stamp.ProvincialResidence)</span> }
+                                                                else
+                                                                { <span><code>@t.Iban</code></span> }
+                                                                <span class="text-secondary">· @t.Category</span>
+                                                                @if (!string.IsNullOrEmpty(t.OrganizationFiscalCode))
+                                                                {
+                                                                    <span class="text-secondary">· ente <strong>@t.OrganizationFiscalCode</strong>@(string.IsNullOrEmpty(t.CompanyName) ? "" : $" ({t.CompanyName})")</span>
+                                                                }
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <partial name="_JsonAccordion" model="@(new JsonAccordionVm("pos", "JSON grezzo GPD (PaymentPositionModelV3)", Model.RawJson))" />
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-body"><i class="bi bi-lightning-charge me-1"></i> Azioni</div>
+            <div class="card-body d-flex flex-column gap-2">
+                <a class="btn btn-outline-dark" target="_blank" href="/ente/dovuti/@d.Iuv/avviso"><i class="bi bi-printer"></i> Stampa avviso con QR</a>
+                @if (d.Status == "PAGATO")
+                {
+                    <a class="btn btn-outline-success" href="/ente/dovuti/@d.Iuv/ricevuta"><i class="bi bi-receipt"></i> Vedi ricevuta</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="/cittadino/paga?nav=@d.Nav"><i class="bi bi-credit-card"></i> Paga come cittadino</a>
+                    <a class="btn btn-outline-secondary" href="/paga?nav=@d.Nav"><i class="bi bi-box-arrow-up-right"></i> Apri nel gateway Checkout</a>
+                    <form method="post" action="/ente/posizioni/@d.Iupd/pubblica" data-loading>
+                        <button class="btn btn-outline-secondary w-100"><i class="bi bi-megaphone"></i> Ripubblica</button>
+                    </form>
+                }
+                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delModal"><i class="bi bi-trash"></i> Elimina posizione</button>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-body"><i class="bi bi-clock-history me-1"></i> Timeline</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var t in timeline)
+                {
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        <i class="bi @t.Icon @(t.Done ? "text-success" : "text-secondary")"></i>
+                        <span class="@(t.Done ? "" : "text-secondary")">@t.Label</span>
+                        <small class="text-secondary ms-auto">@(t.When?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</small>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Modal conferma eliminazione -->
+<div class="modal fade" id="delModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma eliminazione</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Eliminare definitivamente la posizione <code>@d.Iupd</code>? L'operazione invoca <code>DELETE</code> su GPD.</div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="post" action="/ente/posizioni/@d.Iupd/elimina">
+                    <button class="btn btn-danger"><i class="bi bi-trash"></i> Elimina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

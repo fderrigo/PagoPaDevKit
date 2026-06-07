@@ -1,0 +1,50 @@
+@model RicevutaVm
+@{
+    ViewData["Title"] = "Ricevuta";
+    ViewData["Section"] = "Test Ente";
+    var d = Model.Dovuto;
+    var r = Model.Receipt;
+    string euro(long c) => (c / 100m).ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+    string euroD(decimal x) => x.ToString("N2", CultureInfo.GetCultureInfo("it-IT"));
+}
+
+<a href="/ente/ricevute" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> Ricevute</a>
+<h1 class="h3 mb-3">Ricevuta di pagamento (RT)</h1>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-body"><i class="bi bi-file-text me-1"></i> Posizione debitoria</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-secondary">Causale</dt><dd class="col-7">@d.Description</dd>
+                    <dt class="col-5 text-secondary">IUV</dt><dd class="col-7"><code>@d.Iuv</code></dd>
+                    <dt class="col-5 text-secondary">Debitore</dt><dd class="col-7">@d.DebtorName</dd>
+                    <dt class="col-5 text-secondary">Importo</dt><dd class="col-7">@euro(d.Amount) €</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100 @(r is null ? "" : "border-success")">
+            <div class="card-header bg-body"><i class="bi bi-receipt me-1"></i> Ricevuta telematica</div>
+            <div class="card-body">
+                @if (r is null)
+                {
+                    <div class="text-secondary"><i class="bi bi-hourglass"></i> Ricevuta non ancora disponibile su GPD.</div>
+                }
+                else
+                {
+                    <dl class="row mb-0">
+                        <dt class="col-5 text-secondary">Receipt ID</dt><dd class="col-7"><code>@r.ReceiptId</code></dd>
+                        <dt class="col-5 text-secondary">Esito</dt><dd class="col-7"><span class="badge text-bg-success">@r.Outcome</span></dd>
+                        <dt class="col-5 text-secondary">PSP</dt><dd class="col-7">@r.PspCompanyName</dd>
+                        <dt class="col-5 text-secondary">Importo pagato</dt><dd class="col-7">@euroD(r.PaymentAmount) €</dd>
+                        <dt class="col-5 text-secondary">Commissione</dt><dd class="col-7">@euroD(r.Fee) €</dd>
+                        <dt class="col-5 text-secondary">Data/ora</dt><dd class="col-7">@r.PaymentDateTime.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    </div>
+</div>
