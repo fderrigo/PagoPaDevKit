@@ -328,6 +328,17 @@ attivazione GPD e **subscription key** dal BackOffice, configurazione segregatio
 
 ---
 
+## Sul blog
+
+Scheda del progetto nella sezione Labs di [derrigo.it](https://www.derrigo.it): [PagoPA Dev Kit](https://www.derrigo.it/Products/Info/2/pagopa-dev-kit)
+
+Articoli correlati:
+
+- [L'ecosistema digitale nazionale](https://www.derrigo.it/Articles/Info/4/l-ecosistema-digitale-nazionale)
+- [Paperopoli: un Comune finto costruito sul serio](https://www.derrigo.it/Articles/Info/8/paperopoli-un-comune-finto-costruito-sul-serio)
+
+Chi sono: [Filippo D'Errigo](https://www.derrigo.it/Pages/Info/1/chi-sono)
+
 ## Licenza
 
 Il codice di questo progetto è distribuito sotto **Apache License 2.0** — vedi il file
