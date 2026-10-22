@@ -328,16 +328,16 @@ attivazione GPD e **subscription key** dal BackOffice, configurazione segregatio
 
 ---
 
-## Sul blog
+## Approfondimenti
 
-Scheda del progetto nella sezione Labs di [derrigo.it](https://www.derrigo.it): [PagoPA Dev Kit](https://www.derrigo.it/Products/Info/2/pagopa-dev-kit)
+Il progetto è presentato nella sezione Labs di [derrigo.it](https://www.derrigo.it): [PagoPA Dev Kit](https://www.derrigo.it/Products/Info/2/pagopa-dev-kit).
 
 Articoli correlati:
 
 - [L'ecosistema digitale nazionale](https://www.derrigo.it/Articles/Info/4/l-ecosistema-digitale-nazionale)
 - [Paperopoli: un Comune finto costruito sul serio](https://www.derrigo.it/Articles/Info/8/paperopoli-un-comune-finto-costruito-sul-serio)
 
-Chi sono: [Filippo D'Errigo](https://www.derrigo.it/Pages/Info/1/chi-sono)
+---
 
 ## Licenza
 
@@ -355,3 +355,9 @@ applica a tali componenti.
 formazione, fornito senza alcuna garanzia.** «pagoPA» e i marchi correlati appartengono ai
 rispettivi titolari e sono citati al solo scopo di descrivere i contratti tecnici pubblici che
 l'emulatore riproduce. Il software non si connette al Nodo dei Pagamenti reale e non movimenta denaro.
+
+---
+
+## Autore
+
+**Filippo D'Errigo** · [Chi sono](https://www.derrigo.it/Pages/Info/1/chi-sono) · [derrigo.it](https://www.derrigo.it) · [GitHub](https://github.com/fderrigo)
